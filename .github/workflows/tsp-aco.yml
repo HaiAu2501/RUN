@@ -1,4 +1,4 @@
-name: MCTS Optimization
+name: TSP-ACO Benchmark
 
 on: workflow_dispatch
 
