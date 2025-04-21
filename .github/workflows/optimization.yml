@@ -1,20 +1,21 @@
 name: MCTS Optimization
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch
+
+permissions:
+  contents: read
 
 jobs:
   run-optimization:
     name: MCTS Optimization
     runs-on: ubuntu-latest
-    env:
-      CHECKOUT_TOKEN: ${{ secrets.CHECKOUT_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           repository: HaiAu2501/MERO
-          token: ${{ env.CHECKOUT_TOKEN }}
+          token: ${{ secrets.CHECKOUT_TOKEN }}
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v5
