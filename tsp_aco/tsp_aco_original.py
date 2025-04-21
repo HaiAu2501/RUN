@@ -352,7 +352,7 @@ def get_data(name):
 				distances[i_idx][j_idx] = problem.get_weight(i, j)
 
 	optimal = None
-	with open('../solutions', 'r') as f:
+	with open('solutions', 'r') as f:
 		for line in f:
 			line = line.strip()
 			if not line or ':' not in line:
