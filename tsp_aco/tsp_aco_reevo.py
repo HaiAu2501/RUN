@@ -180,23 +180,21 @@ def get_data(name):
 
 def run_reevo(n_ants=30, n_iterations=100):
     # Lấy tất cả các file trong thư mục benchmark
-    for file in os.listdir('../benchmark'):
+    for file in os.listdir('benchmark'):
         if file.endswith('.tsp'):
             # Lấy tên file mà không có phần mở rộng
             name = os.path.splitext(file)[0]
-            break
-    # Đọc dữ liệu từ file
-    distances, optimal = get_data(name)
-    def opt_gap(optimal, obj):
-        return (obj - optimal) / optimal * 100
-    # Chạy hàm solve_reevo với dữ liệu đã đọc
-    avg_obj = 0
-    for seed in range(5):
-        obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=seed)
-        avg_obj += obj
-    avg_obj /= 5
-    print(f"{name}: opt_gap = {opt_gap(optimal, avg_obj):.2f}%")
-    return obj, optimal
+            # Đọc dữ liệu từ file
+            distances, optimal = get_data(name)
+            def opt_gap(optimal, obj):
+                return (obj - optimal) / optimal * 100
+            # Chạy hàm solve_reevo với dữ liệu đã đọc
+            avg_obj = 0
+            for seed in range(5):
+                obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=seed)
+                avg_obj += obj
+            avg_obj /= 5
+            print(f"{name}: opt_gap = {opt_gap(optimal, avg_obj):.2f}%")
 
 if __name__ == "__main__":
     run_reevo(n_ants=30, n_iterations=100)
