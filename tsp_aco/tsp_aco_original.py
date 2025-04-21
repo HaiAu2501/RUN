@@ -339,7 +339,7 @@ class PheromoneImpl(PheromoneStrategy):
         return pheromone
 
 def get_data(name):
-	problem = tsplib95.load(f'../benchmark/{name}.tsp')
+	problem = tsplib95.load(f'benchmark/{name}.tsp')
 
 	nodes = list(problem.get_nodes())
 	n = len(nodes)

@@ -155,7 +155,7 @@ def solve_reevo(dist_mat, n_ants=30, n_iterations=100, seed=0):
     return obj
 
 def get_data(name):
-	problem = tsplib95.load(f'../benchmark/{name}.tsp')
+	problem = tsplib95.load(f'benchmark/{name}.tsp')
 
 	nodes = list(problem.get_nodes())
 	n = len(nodes)
