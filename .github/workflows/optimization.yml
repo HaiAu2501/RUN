@@ -1,0 +1,44 @@
+name: MCTS Optimization
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-optimization:
+    name: MCTS Optimization
+    runs-on: ubuntu-latest
+    env:
+      CHECKOUT_TOKEN: ${{ secrets.CHECKOUT_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: HaiAu2501/MERO
+          token: ${{ env.CHECKOUT_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run optimization
+        run: |
+          echo "Running optimization..."
+          python main.py
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimization-results
+          path: |
+            results/
+            logger/
+            outputs/
+          if-no-files-found: warn
+          retention-days: 90
