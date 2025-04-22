@@ -154,7 +154,7 @@ def solve_reevo(dist_mat, n_ants=30, n_iterations=100, seed=0):
     obj = aco.run(n_iterations)
     return obj
 
-def run_reevo(n_ants=30, n_iterations=100):
+def run_reevo(size):
     # Lấy tất cả các file trong thư mục benchmark
     for size in [20, 50, 100]:
         avg_costs = 0
