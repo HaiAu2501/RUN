@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scripts: ["mero_1.py", "mero_2.py", "mero_3.py"]
+        scripts: ["solution_1"]
 
     steps:
       - name: Checkout repo
@@ -31,4 +31,4 @@ jobs:
       - name: Run ${{ matrix.scripts }}
         run: |
           echo "Running ${{ matrix.scripts }}..."
-          python tsp_aco_mero/${{ matrix.scripts }}
+          python tsp_aco_mero/main.py ${{ matrix.scripts }}

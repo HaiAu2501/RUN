@@ -4,29 +4,29 @@ from typing import List, Dict, Any, Optional, List
 from abc import ABC, abstractmethod
 import tsplib95
 
-def get_data(name):
-	problem = tsplib95.load(f'benchmark/{name}.tsp')
+# def get_data(name):
+# 	problem = tsplib95.load(f'benchmark/{name}.tsp')
 
-	nodes = list(problem.get_nodes())
-	n = len(nodes)
+# 	nodes = list(problem.get_nodes())
+# 	n = len(nodes)
 
-	distances = np.zeros((n, n))
+# 	distances = np.zeros((n, n))
 
-	for i_idx, i in enumerate(nodes):
-		for j_idx, j in enumerate(nodes):
-			if i != j:
-				distances[i_idx][j_idx] = problem.get_weight(i, j)
+# 	for i_idx, i in enumerate(nodes):
+# 		for j_idx, j in enumerate(nodes):
+# 			if i != j:
+# 				distances[i_idx][j_idx] = problem.get_weight(i, j)
 
-	optimal = None
-	with open('solutions', 'r') as f:
-		for line in f:
-			line = line.strip()
-			if not line or ':' not in line:
-				continue
-			key, val = line.split(':', 1)
-			if key.strip() == name:
-				optimal = int(val.strip())
-	return distances, optimal
+# 	optimal = None
+# 	with open('solutions', 'r') as f:
+# 		for line in f:
+# 			line = line.strip()
+# 			if not line or ':' not in line:
+# 				continue
+# 			key, val = line.split(':', 1)
+# 			if key.strip() == name:
+# 				optimal = int(val.strip())
+# 	return distances, optimal
 
 class History:
     """Static class to track key ACO metrics accessible from anywhere."""
@@ -51,7 +51,6 @@ class History:
         History.alpha = []
         History.beta = []
         History.decay = []
-
 
 
 class HeuristicStrategy(ABC):

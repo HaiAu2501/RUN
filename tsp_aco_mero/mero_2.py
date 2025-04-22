@@ -1,4 +1,4 @@
-from mero import *
+from tsp_aco_mero.solution_1.mero import *
 import numpy as np
 import torch
 import tsplib95
