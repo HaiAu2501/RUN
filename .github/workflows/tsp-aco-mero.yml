@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scripts: ["mero_1.py", "mero_2.py"]
+        scripts: ["mero_1.py", "mero_2.py", "mero_3.py"]
 
     steps:
       - name: Checkout repo

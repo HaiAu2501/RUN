@@ -163,4 +163,4 @@ def run_aco(n_ants=30, n_iterations=100):
         print(f"Average cost for TSP{size}: {avg_costs}")
 
 if __name__ == "__main__":
-    run_aco(n_ants=30, n_iterations=100)
+    run_aco(n_ants=50, n_iterations=200)
