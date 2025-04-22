@@ -3,7 +3,7 @@ name: MCTS Optimization
 on:
   workflow_dispatch:
     inputs:
-      iteration:
+      iterations:
         description: "Number of iterations"
         required: true
         default: "10"
@@ -48,8 +48,8 @@ jobs:
 
       - name: Run optimization
         run: |
-          echo "Running optimization with iteration=${{ github.event.inputs.iteration }} and model=${{ github.event.inputs.model }}..."
-          python main.py mcts.iteration=${{ github.event.inputs.iteration }} llm.model=${{ github.event.inputs.model }}
+          echo "Running optimization with iterations=${{ github.event.inputs.iterations }} and model=${{ github.event.inputs.model }}..."
+          python main.py mcts.iterations=${{ github.event.inputs.iterations }} llm.model=${{ github.event.inputs.model }}
 
       - name: Upload results
         uses: actions/upload-artifact@v4
