@@ -1,4 +1,4 @@
-name: TSP-ACO by MERO
+name: TSP-ACO by ReEvo
 
 on: workflow_dispatch
 
@@ -6,12 +6,12 @@ permissions:
   contents: read
 
 jobs:
-  run-tsp-aco-mero:
-    name: TSP-ACO by MERO
+  run-tsp-aco-reevo:
+    name: TSP-ACO by ReEvo
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scripts: ["200, 500, 1000"]
+        scripts: ["200", "500", "1000"]
 
     steps:
       - name: Checkout repo

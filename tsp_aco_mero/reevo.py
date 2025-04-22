@@ -4,6 +4,8 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 import tsplib95
 import os
+import sys
+from tqdm import tqdm
 
 class ACO():
 	def __init__(self, 
@@ -154,16 +156,39 @@ def solve_reevo(dist_mat, n_ants=30, n_iterations=100, seed=0):
     obj = aco.run(n_iterations)
     return obj
 
+size = sys.argv[1]
+
 def run_reevo(size):
+	avg_costs = 0
+	if size == "200":
+		n_ants = 100
+		n_iterations = 200
+	elif size == "500":
+		n_ants = 100
+		n_iterations = 500
+	elif size == "1000":
+		n_ants = 100
+		n_iterations = 1000
     # Lấy tất cả các file trong thư mục benchmark
-    for size in [20, 50, 100]:
-        avg_costs = 0
-        for i in range(1, 65):
-            path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
-            distances = np.load(path)
-            obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
-            avg_costs += obj
-        print(f"Average cost for TSP{size}: {avg_costs / 64}")
+	path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
+	prob_batch = np.load(path)
+	for i, prob in tqdm(enumerate(prob_batch), desc=f"Processing TSP{size}", start=1):
+		distances = prob
+		obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
+		avg_costs += obj
+
+	avg_costs /= len(prob_batch)
+	print(f"Average cost for TSP{size}: {avg_costs}")
+
+
+    # for size in [20, 50, 100]:
+    #     avg_costs = 0
+    #     for i in range(1, 65):
+    #         path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
+    #         distances = np.load(path)
+    #         obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
+    #         avg_costs += obj
+    #     print(f"Average cost for TSP{size}: {avg_costs / 64}")
 
 if __name__ == "__main__":
-    run_reevo(n_ants=50, n_iterations=200)
+    run_reevo(size)
