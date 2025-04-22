@@ -7,40 +7,31 @@ from typing import List, Dict, Any, Optional, List
 from abc import ABC, abstractmethod
 
 class HeuristicImpl(HeuristicStrategy):
-    def __init__(self, alpha=1.0, beta=2.0):
-        self.alpha = alpha
-        self.beta = beta
+    def __init__(self, epsilon=1e-10):
+        self.epsilon = epsilon  # small value to prevent division by zero
 
     def compute(self, distances: torch.Tensor) -> torch.Tensor:
-        # Avoid division by zero by substituting small values where distances are zero
-        mask = (distances == 0)
-        distances_safe = distances.clone()
-        distances_safe[mask] = 1e-10
-
-        # Compute Inverse Distance Heuristic
-        inverse_distances = 1.0 / distances_safe
-        heuristic_values = inverse_distances * (inverse_distances ** self.alpha)  # Apply alpha scaling
-
+        # Safeguard for distance computations
+        distances_safe = distances.clone() + self.epsilon
+        mean_distance = torch.mean(distances_safe)
+        variance_distance = torch.var(distances_safe)
+        adaptive_alpha = self.calculate_scaling_factor(mean_distance, variance_distance)
+        heuristic_values = (1.0 / distances_safe) ** adaptive_alpha
         
-        # Apply Exponential Decay
-        decay_values = torch.exp(-distances_safe)  # Apply exponential decay based on the distances
-        heuristic_values *= decay_values  # Scale the heuristic values by decay
-        
-        # Combine with pheromones
-        pheromones = History.pheromone[-1] if History.pheromone else torch.ones_like(distances)
-        combined_values = heuristic_values * (pheromones ** self.beta)
+        # Store the computed heuristic values in History for tracking
+        History.heuristic.append(heuristic_values.clone())
+        return heuristic_values
 
-        # Update history
-        History.heuristic.append(combined_values.clone())
-
-        return combined_values
+    def calculate_scaling_factor(self, mean_distance, variance_distance):
+        # Calculate adaptive scaling factor based on mean and variance
+        return 2.0 / (mean_distance + 0.5 * variance_distance)  # Enhanced stability and adaptability
 
 class ProbabilityImpl(ProbabilityStrategy):
     """
     Implementation of probability calculation strategy for ACO TSP.
     Calculates probabilities for selecting the next city based on pheromone and heuristic values.
     """
-
+    
     def compute(self, pheromone: torch.Tensor, heuristic: torch.Tensor) -> torch.Tensor:
         """
         Compute probabilities for next city selection.
@@ -52,125 +43,103 @@ class ProbabilityImpl(ProbabilityStrategy):
         Returns:
             Tensor with probability values
         """
-        # Hyperparameter setup
-        alpha = 1.0
-        beta = 2.0
-        decay_factor = 0.95  # Dynamic decay factor for pheromone levels
+        # Set fixed hyperparameters for stability
+        alpha = 1.0  # Importance of pheromone
+        beta = 1.0   # Importance of heuristic
+        
+        # Normalize pheromone and heuristic values
+        pheromone_normalized = pheromone + 1e-8  # Prevent division by zero
+        heuristic_normalized = heuristic + 1e-8  # Prevent division by zero
 
-        # Apply dynamic decay to pheromone levels
-        pheromone = pheromone * decay_factor
+        attractiveness = (pheromone_normalized ** alpha) * (heuristic_normalized ** beta)
 
-        # Sum of attractiveness values
-        probabilities = (pheromone ** alpha) * (heuristic ** beta)
+        # Normalize attractiveness to get probabilities
+        probabilities = attractiveness / (attractiveness.sum(dim=1, keepdim=True) + 1e-8)  # Prevent division by zero
 
-        # Handle numerical stability by normalizing the probabilities
-        probabilities_sum = probabilities.sum(dim=1, keepdim=True)
-        probabilities = probabilities / probabilities_sum
-
-        # Hyperparameter tracking
+        # Track hyperparameters in History for analysis
         History.alpha.append(alpha)
         History.beta.append(beta)
 
         return probabilities
 
+
 class PheromoneImpl(PheromoneStrategy):
     """
     Implementation of pheromone update strategy for ACO TSP.
-    Handles pheromone deposition and evaporation with adaptive features.
+    Handles pheromone deposition and evaporation with adaptive mechanisms.
     """
-    def __init__(self, base_decay=0.9, min_dec=0.5, max_dec=0.95, stochasticity=0.1):
-        self.base_decay = base_decay  # Initial decay rate
-        self.min_dec = min_dec  # Minimum decay
-        self.max_dec = max_dec  # Maximum decay
-        self.stochasticity = stochasticity  # Stochastic update factor
-
-    def adaptive_decay(self):
-        """Adjusts decay based on historical performance"""
-        if len(History.costs) > 1:
-            recent_cost = History.costs[-1].mean()
-            previous_cost = History.costs[-2].mean()
-            if recent_cost < previous_cost:
-                return max(self.min_dec, self.base_decay - 0.1)  # Reduce decay if improvement
-            else:
-                return min(self.max_dec, self.base_decay + 0.1)  # Increase decay if no improvement
-        return self.base_decay
-
-    def clamp_values(self, pheromone):
-        """Clamp pheromone values to avoid numerical instability"""
-        return torch.clamp(pheromone, min=1e-10, max=1e10)
-
-    def update(self, pheromone: torch.Tensor, paths: torch.Tensor, costs: torch.Tensor) -> torch.Tensor:
-        # Select dynamic decay
-        decay = self.adaptive_decay()  
-        History.decay.append(decay)
+    
+    def update(self, pheromone: torch.Tensor, paths: torch.Tensor, 
+              costs: torch.Tensor) -> torch.Tensor:
+        """
+        Update pheromone levels based on ant paths and solution costs.
         
-        # Apply evaporation
-        pheromone *= decay
-        
-        # Compute average cost and variance
-        avg_cost = costs.mean() 
-        cost_variance = costs.var()  
-        
-        # Deposit new pheromones with improved strategy based on variance
-        n_ants = paths.shape[1]
-        for i in range(n_ants):
-            path = paths[:, i]
-            pheromone_increment = 1.0 / (avg_cost + cost_variance + 1e-10)  # Adjust based on average and variance
+        Args:
+            pheromone: Tensor of shape (n, n) with current pheromone levels
+            paths: Tensor of shape (n_cities, n_ants) with paths taken by ants
+            costs: Tensor of shape (n_ants,) with path costs
             
-            # Stochastic updates with controlled exploration rate
-            if random.random() < self.stochasticity:
-                adjustment = random.uniform(0.5, 1.0) * (1 + cost_variance)  # Scale adjustment by variance
-                pheromone[path, torch.roll(path, shifts=1)] += pheromone_increment * adjustment
-                pheromone[torch.roll(path, shifts=1), path] += pheromone_increment * adjustment
-            else:
-                pheromone[path, torch.roll(path, shifts=1)] += pheromone_increment
-                pheromone[torch.roll(path, shifts=1), path] += pheromone_increment
+        Returns:
+            Updated pheromone tensor
+        """
         
-        # Normalize and clamp pheromone values
-        pheromone = self.clamp_values(pheromone)
+        # Adaptive decay based on average costs
+        average_cost = costs.mean().item()
+        decay = self.calculate_decay(average_cost)  # Dynamic decay rate
+        pheromone = self.apply_evaporation(pheromone, decay)
+        pheromone = self.weighted_update(pheromone, paths, costs)
+        self.elitist_update(pheromone, paths, costs)
+        pheromone = self.robust_normalize(pheromone)
 
-        # Update History with the new pheromone values
-        History.pheromone.append(pheromone.clone())
+        # Store decay and pheromone levels in History
+        History.decay.append(decay)
+        History.pheromone.append(pheromone.clone())  # Store updated pheromone levels
+        
+        return pheromone
+    
+    def calculate_decay(self, average_cost):
+        # Adapt decay based on performance
+        return max(0.5, 1 - average_cost / (average_cost + 1))
 
+    def apply_evaporation(self, pheromone, decay):
+        return torch.clamp(pheromone * decay, min=1e-10)
+
+    def weighted_update(self, pheromone, paths, costs):
+        for i in range(paths.shape[1]):
+            weight = 1.0 / (costs[i].item() ** 2 + 1e-10)  # Inverse cost to promote better paths
+            pheromone[paths[:, i], torch.roll(paths[:, i], shifts=1)] += weight
         return pheromone
 
+    def elitist_update(self, pheromone, paths, costs):
+        best_idx = costs.argmin()  # Get index of the best path
+        best_path = paths[:, best_idx]  # Get the best path taken
+        pheromone[best_path, torch.roll(best_path, shifts=1)] += 1.0  # Boost pheromone for the best path
+        return pheromone
 
+    def robust_normalize(self, pheromone):
+        return pheromone / (pheromone.sum(dim=1, keepdim=True) + 1e-10)  # Prevent saturation of pheromone values
 
 
 def run_aco(n_ants=30, n_iterations=100):
     # Lấy tất cả các file trong thư mục benchmark
-    for file in os.listdir('benchmark'):
-        if file.endswith('.tsp'):
-            # Lấy tên file mà không có phần mở rộng
-            name = os.path.splitext(file)[0]
-            # Đọc dữ liệu từ file
-            distances, optimal = get_data(name)
-            def opt_gap(optimal, obj):
-                return (obj - optimal) / optimal * 100
-
-            # Chạy hàm solve_reevo với dữ liệu đã đọc
-            avg_obj = 0
-            for seed in range(5):
-                heuristic_strategy = HeuristicImpl()
-                probability_strategy = ProbabilityImpl()
-                pheromone_strategy = PheromoneImpl()
-                
-                aco = AntColonyOptimization(
-                    distances=distances,
-                    n_ants=n_ants,
-                    n_iterations=n_iterations,
-                    device='cpu',
-                    seed=seed,
-                    heuristic_strategy=heuristic_strategy,
-                    probability_strategy=probability_strategy,
-                    pheromone_strategy=pheromone_strategy
-                )
-                
-                obj = aco.run()
-                avg_obj += obj
-
-            avg_obj /= 5
-            print(f"{name}: opt_gap = {opt_gap(optimal, avg_obj):.2f}%")
+    for size in [20, 50, 100]:
+        avg_costs = 0
+        for i in range(1, 65):
+            path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
+            distances = np.load(path)
+            aco = AntColonyOptimization(
+                distances=distances,
+                n_ants=n_ants,
+                n_iterations=n_iterations,
+                seed=0,
+                pheromone_strategy=PheromoneImpl(),
+                heuristic_strategy=HeuristicImpl(),
+                probability_strategy=ProbabilityImpl()
+            )
+            cost = aco.run()
+            avg_costs += cost
+        avg_costs /= 64
+        print(f"Average cost for TSP{size}: {avg_costs:.2f}")
 
 if __name__ == "__main__":
     run_aco(n_ants=30, n_iterations=100)
