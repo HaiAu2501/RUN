@@ -172,7 +172,7 @@ def run_reevo(size):
     # Lấy tất cả các file trong thư mục benchmark
 	path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
 	prob_batch = np.load(path)
-	for i, prob in tqdm(enumerate(prob_batch), desc=f"Processing TSP{size}", start=1):
+	for i, prob in tqdm(enumerate(prob_batch), desc=f"Processing TSP{size}"):
 		distances = prob
 		obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
 		avg_costs += obj

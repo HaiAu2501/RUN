@@ -25,7 +25,7 @@ def run_aco(size):
         n_iterations = 1000
     path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
     prob_batch = np.load(path)
-    for i, prob in tqdm(enumerate(prob_batch), desc=f"Processing TSP{size}", start=1):
+    for i, prob in tqdm(enumerate(prob_batch), desc=f"Processing TSP{size}"):
         distances = prob
         aco = module.AntColonyOptimization(
             distances=distances,
