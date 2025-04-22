@@ -173,7 +173,8 @@ def run_reevo(size):
 	path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
 	prob_batch = np.load(path)
 	from scipy.spatial import distance_matrix
-	for i, prob in tqdm(enumerate(prob_batch), desc=f"Processing TSP{size}"):
+	for i, prob in enumerate(prob_batch):
+		print(f"Processing TSP{size} {i}")
 		distances = distance_matrix(prob, prob)
 		obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
 		print(f"Cost for TSP{size} {i}: {obj}")

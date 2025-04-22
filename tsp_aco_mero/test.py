@@ -27,7 +27,8 @@ def run_aco(size):
     prob_batch = np.load(path)
     from scipy.spatial import distance_matrix
     # Calculate the distance matrix
-    for i, prob in tqdm(enumerate(prob_batch), desc=f"Processing TSP{size}"):
+    for i, prob in enumerate(prob_batch):
+        print(f"Processing TSP{size} {i}")
         distances = distance_matrix(prob, prob)
         aco = module.AntColonyOptimization(
             distances=distances,
