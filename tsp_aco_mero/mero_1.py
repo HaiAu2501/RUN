@@ -160,7 +160,7 @@ def run_aco(n_ants=30, n_iterations=100):
             cost = aco.run()
             avg_costs += cost
         avg_costs /= 64
-        print(f"Average cost for TSP{size}: {avg_costs:.2f}")
+        print(f"Average cost for TSP{size}: {avg_costs}")
 
 if __name__ == "__main__":
     run_aco(n_ants=30, n_iterations=100)
