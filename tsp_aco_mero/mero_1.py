@@ -7,68 +7,87 @@ from typing import List, Dict, Any, Optional, List
 from abc import ABC, abstractmethod
 
 class HeuristicImpl(HeuristicStrategy):
-    def __init__(self, epsilon=1e-10):
-        self.epsilon = epsilon  # small value to prevent division by zero
+    """Implementation of heuristic strategy for ACO TSP. Transforms distances into heuristic attractiveness values."""
+
+    def __init__(self, alpha=0.5, exponent=2):
+        self.alpha = alpha  # Weight for the hybrid heuristic (inverse distance vs. normalized)
+        self.exponent = exponent  # Exponent for polynomial transformation of inverse distances
 
     def compute(self, distances: torch.Tensor) -> torch.Tensor:
-        # Safeguard for distance computations
-        distances_safe = distances.clone() + self.epsilon
-        mean_distance = torch.mean(distances_safe)
-        variance_distance = torch.var(distances_safe)
-        adaptive_alpha = self.calculate_scaling_factor(mean_distance, variance_distance)
-        heuristic_values = (1.0 / distances_safe) ** adaptive_alpha
-        
-        # Store the computed heuristic values in History for tracking
-        History.heuristic.append(heuristic_values.clone())
-        return heuristic_values
+        """Convert distances to heuristic attractiveness values."""
+        # Handle edge cases to prevent division by zero
+        distances_safe = distances.clone() + 1e-10  # Add a small value to avoid division by zero
 
-    def calculate_scaling_factor(self, mean_distance, variance_distance):
-        # Calculate adaptive scaling factor based on mean and variance
-        return 2.0 / (mean_distance + 0.5 * variance_distance)  # Enhanced stability and adaptability
+        # Compute inverse distance heuristic
+        inverse_heuristic = 1.0 / distances_safe
+
+        # Normalize the distances to range [0, 1]
+        normalized_heuristic = self.normalize(distances)
+
+        # Hybrid heuristic combining inverse distance with normalized distances
+        composite_heuristic = self.alpha * inverse_heuristic + (1 - self.alpha) * normalized_heuristic
+
+        # Apply polynomial transformation to inverse distance for better sensitivity (optional)
+        polynomial_heuristic = (1.0 / distances_safe) ** self.exponent
+
+        # Combine polynomial heuristic with the composite heuristic
+        composite_heuristic = self.alpha * polynomial_heuristic + (1 - self.alpha) * normalized_heuristic
+
+        # Track heuristics in history to enable adaptive mechanisms
+        History.heuristic.append(composite_heuristic.clone())
+
+        return composite_heuristic
+
+    def normalize(self, distances: torch.Tensor) -> torch.Tensor:
+        """Normalize the distance matrix to range [0, 1]."""
+        min_dist = torch.min(distances)
+        max_dist = torch.max(distances)
+        normalized_values = (distances - min_dist) / (max_dist - min_dist)
+        return normalized_values
 
 class ProbabilityImpl(ProbabilityStrategy):
     """
     Implementation of probability calculation strategy for ACO TSP.
     Calculates probabilities for selecting the next city based on pheromone and heuristic values.
     """
-    
+
+    def dynamic_tune(self):
+        if len(History.costs) > 1:
+            previous_cost = History.costs[-2].mean()
+            current_cost = History.costs[-1].mean()
+            alpha = min(4.0, 1.0 + (previous_cost - current_cost) / previous_cost)
+            beta = min(4.0, 2.0 + (previous_cost - current_cost) / previous_cost)
+        else:
+            alpha, beta = 1.0, 2.0  # Static fallback values
+        return alpha, beta
+
     def compute(self, pheromone: torch.Tensor, heuristic: torch.Tensor) -> torch.Tensor:
-        """
-        Compute probabilities for next city selection.
-        
-        Args:
-            pheromone: Tensor of shape (n, n) with pheromone levels
-            heuristic: Tensor of shape (n, n) with heuristic values
-            
-        Returns:
-            Tensor with probability values
-        """
-        # Set fixed hyperparameters for stability
-        alpha = 1.0  # Importance of pheromone
-        beta = 1.0   # Importance of heuristic
-        
-        # Normalize pheromone and heuristic values
-        pheromone_normalized = pheromone + 1e-8  # Prevent division by zero
-        heuristic_normalized = heuristic + 1e-8  # Prevent division by zero
+        alpha, beta = self.dynamic_tune()  # Use adaptive tuning
 
-        attractiveness = (pheromone_normalized ** alpha) * (heuristic_normalized ** beta)
+        # Compute attractiveness scores using pheromone and heuristic
+        attractiveness = (pheromone ** alpha) * (heuristic ** beta)
 
-        # Normalize attractiveness to get probabilities
-        probabilities = attractiveness / (attractiveness.sum(dim=1, keepdim=True) + 1e-8)  # Prevent division by zero
+        # Normalize to obtain probabilities
+        probabilities = self.normalize(attractiveness)
 
-        # Track hyperparameters in History for analysis
+        # Track hyperparameters in history for analysis and coordination
         History.alpha.append(alpha)
         History.beta.append(beta)
 
         return probabilities
 
+    def normalize(self, values: torch.Tensor) -> torch.Tensor:
+        """
+        Normalize the values for probabilistic interpretation.
+        """
+        values = torch.clamp(values, min=1e-10)  # Avoid zero values
+        return values / (values.sum() + 1e-10)  # Normalize to ensure valid probabilities
 
 class PheromoneImpl(PheromoneStrategy):
     """
     Implementation of pheromone update strategy for ACO TSP.
-    Handles pheromone deposition and evaporation with adaptive mechanisms.
+    Handles pheromone deposition and evaporation with enhanced strategies.
     """
-    
     def update(self, pheromone: torch.Tensor, paths: torch.Tensor, 
               costs: torch.Tensor) -> torch.Tensor:
         """
@@ -82,42 +101,44 @@ class PheromoneImpl(PheromoneStrategy):
         Returns:
             Updated pheromone tensor
         """
-        
-        # Adaptive decay based on average costs
-        average_cost = costs.mean().item()
-        decay = self.calculate_decay(average_cost)  # Dynamic decay rate
-        pheromone = self.apply_evaporation(pheromone, decay)
-        pheromone = self.weighted_update(pheromone, paths, costs)
-        self.elitist_update(pheromone, paths, costs)
-        pheromone = self.robust_normalize(pheromone)
+        # Compute dynamic decay based on historical performance
+        decay = self.calculate_dynamic_decay()
 
-        # Store decay and pheromone levels in History
+        # Apply evaporation to the pheromone levels
+        pheromone *= decay
+
+        # Identify the elite paths based on the lowest costs
+        elite_indices = self.select_elite_paths(costs)
+
+        # Deposit pheromones for elite paths
+        self.deposit_pheromones(pheromone, paths, costs, elite_indices)
+
+        # Normalize pheromone levels for stability
+        pheromone = self.safe_normalization(pheromone)
+
+        # Log history for decay and pheromone levels
         History.decay.append(decay)
-        History.pheromone.append(pheromone.clone())  # Store updated pheromone levels
+        History.pheromone.append(pheromone.clone())
         
         return pheromone
-    
-    def calculate_decay(self, average_cost):
-        # Adapt decay based on performance
-        return max(0.5, 1 - average_cost / (average_cost + 1))
 
-    def apply_evaporation(self, pheromone, decay):
-        return torch.clamp(pheromone * decay, min=1e-10)
+    def calculate_dynamic_decay(self):
+        if History.iteration:
+            return max(0.75, min(1.0, 1.0 - History.costs[-1].mean() / 80.0))
+        return 0.9
 
-    def weighted_update(self, pheromone, paths, costs):
-        for i in range(paths.shape[1]):
-            weight = 1.0 / (costs[i].item() ** 2 + 1e-10)  # Inverse cost to promote better paths
-            pheromone[paths[:, i], torch.roll(paths[:, i], shifts=1)] += weight
-        return pheromone
+    def select_elite_paths(self, costs):
+        elite_count = max(1, int(0.2 * len(costs)))  # Top 20%
+        return torch.argsort(costs)[:elite_count]
 
-    def elitist_update(self, pheromone, paths, costs):
-        best_idx = costs.argmin()  # Get index of the best path
-        best_path = paths[:, best_idx]  # Get the best path taken
-        pheromone[best_path, torch.roll(best_path, shifts=1)] += 1.0  # Boost pheromone for the best path
-        return pheromone
+    def deposit_pheromones(self, pheromone, paths, costs, elite_indices):
+        for index in elite_indices:
+            path = paths[:, index]
+            pheromone[path, torch.roll(path, shifts=-1)] += 1.0 / costs[index]  # Forward edge
+            pheromone[torch.roll(path, shifts=-1), path] += 1.0 / costs[index]  # Backward edge
 
-    def robust_normalize(self, pheromone):
-        return pheromone / (pheromone.sum(dim=1, keepdim=True) + 1e-10)  # Prevent saturation of pheromone values
+    def safe_normalization(self, pheromone):
+        return torch.clamp((pheromone - pheromone.min()) / (pheromone.max() - pheromone.min() + 1e-10) * 9.98 + 0.01, 0.01, 10)
 
 
 def run_aco(n_ants=30, n_iterations=100):
