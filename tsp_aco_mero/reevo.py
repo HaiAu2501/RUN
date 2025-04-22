@@ -176,6 +176,7 @@ def run_reevo(size):
 	for i, prob in tqdm(enumerate(prob_batch), desc=f"Processing TSP{size}"):
 		distances = distance_matrix(prob, prob)
 		obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
+		print(f"Cost for TSP{size} {i}: {obj}")
 		avg_costs += obj
 
 	avg_costs /= len(prob_batch)

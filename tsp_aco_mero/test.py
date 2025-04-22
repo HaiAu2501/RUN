@@ -22,7 +22,7 @@ def run_aco(size):
         n_iterations = 500
     elif size == "1000":
         n_ants = 100
-        n_iterations = 1000
+        n_iterations = 500
     path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
     prob_batch = np.load(path)
     from scipy.spatial import distance_matrix
@@ -39,6 +39,7 @@ def run_aco(size):
             probability_strategy=module.ProbabilityImpl()
         )
         cost = aco.run()
+        print(f"Cost for TSP{size} {i}: {cost}")
         avg_costs += cost
     avg_costs /= len(prob_batch)
     print(f"Average cost for TSP{size}: {avg_costs}")
