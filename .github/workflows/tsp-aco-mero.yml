@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scripts: ["solution_3", "solution_4"]
+        scripts: ["solution_5"]
 
     steps:
       - name: Checkout repo
