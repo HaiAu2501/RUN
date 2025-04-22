@@ -1,0 +1,56 @@
+name: TSP-ACO Comparison
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  run-tsp-aco-mero:
+    name: TSP-ACO by MERO
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scripts:
+          [
+            "a280",
+            "ali535",
+            "att532",
+            "bier127",
+            "brg180",
+            "ch130",
+            "ch150",
+            "d198",
+            "d493",
+            "d657",
+            "eil101",
+            "fl417",
+            "gil262",
+            "gr120",
+            "gr137",
+            "gr202",
+            "gr229",
+            "gr431",
+            "gr666",
+            "kroA100",
+          ]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run ${{ matrix.scripts }}
+        run: |
+          echo "Running ${{ matrix.scripts }}..."
+          python tsp_aco_mero/main.py ${{ matrix.scripts }}
