@@ -31,4 +31,4 @@ jobs:
       - name: Run ${{ matrix.scripts }}
         run: |
           echo "Running TSP${{ matrix.scripts }}..."
-          python tsp_aco_mero/test.py solution_5 ${{ matrix.scripts }} -v
+          python tsp_aco_mero/test.py solution_5 ${{ matrix.scripts }}
