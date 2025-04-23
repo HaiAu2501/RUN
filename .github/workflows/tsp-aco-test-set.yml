@@ -1,6 +1,16 @@
 name: TSP-ACO on TEST
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      n_ants:
+        description: "Number of ants"
+        required: true
+        default: "10"
+      n_interations:
+        description: "Number of iterations"
+        required: true
+        default: "100"
 
 permissions:
   contents: read
@@ -31,4 +41,4 @@ jobs:
       - name: Run ${{ matrix.scripts }}
         run: |
           echo "Running TSP${{ matrix.scripts }}..."
-          python tsp_aco_mero/main.py solution_67 ${{ matrix.scripts }}
+          python tsp_aco_mero/main.py solution_67 ${{ matrix.scripts }} ${{ github.event.inputs.n_ants }} ${{ github.event.inputs.n_interations }}
