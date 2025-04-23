@@ -157,23 +157,13 @@ def solve_reevo(dist_mat, n_ants=30, n_iterations=100, seed=0):
     return obj
 
 size = sys.argv[1]
+n_ants = 50
+n_iterations = 100
 
 def run_reevo(size):
 	avg_costs = 0
-	if size == "200":
-		n_ants = 100
-		n_iterations = 200
-	elif size == "500":
-		n_ants = 100
-		n_iterations = 200
-	elif size == "1000":
-		n_ants = 100
-		n_iterations = 200
-	else:
-		n_ants = 50
-		n_iterations = 100
     # Lấy tất cả các file trong thư mục benchmark
-	path = f"tsp_aco_mero/beta_tsp/TSP{size}.npy"
+	path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
 	prob_batch = np.load(path)
 	from scipy.spatial import distance_matrix
 	for i, prob in enumerate(prob_batch):
@@ -197,5 +187,5 @@ def run_reevo(size):
     #     print(f"Average cost for TSP{size}: {avg_costs / 64}")
 
 if __name__ == "__main__":
-    print(f"Running ACO for TSP{size} with Beta Distribution")
+    print(f"Running ACO for TSP{size} with n_ants={n_ants} and n_iterations={n_iterations}")
     run_reevo(size)

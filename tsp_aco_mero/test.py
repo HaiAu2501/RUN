@@ -11,22 +11,12 @@ from tqdm import tqdm
 
 module = importlib.import_module(sys.argv[1])
 size = sys.argv[2]
+n_ants = 50
+n_iterations = 100
 
 def run_aco(size):
     avg_costs = 0
-    if size == "200":
-        n_ants = 100
-        n_iterations = 200
-    elif size == "500":
-        n_ants = 100
-        n_iterations = 200
-    elif size == "1000":
-        n_ants = 100
-        n_iterations = 200
-    else:
-        n_ants = 50
-        n_iterations = 100
-    path = f"tsp_aco_mero/beta_tsp/TSP{size}.npy"
+    path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
     prob_batch = np.load(path)
     from scipy.spatial import distance_matrix
     # Calculate the distance matrix
@@ -49,5 +39,5 @@ def run_aco(size):
     print(f"Average cost for TSP{size}: {avg_costs}")
 
 if __name__ == "__main__":
-    print(f"Running ACO for TSP{size} with Beta Distribution")
+    print(f"Running ACO for TSP{size} with n_ants={n_ants} and n_iterations={n_iterations}")
     run_aco(size)
