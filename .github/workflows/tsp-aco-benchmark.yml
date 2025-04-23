@@ -13,26 +13,13 @@ jobs:
       matrix:
         scripts:
           [
-            "a280",
-            "ali535",
-            "att532",
-            "bier127",
-            "brg180",
-            "ch130",
-            "ch150",
-            "d198",
-            "d493",
-            "d657",
-            "eil101",
-            "fl417",
-            "gil262",
-            "gr120",
-            "gr137",
-            "gr202",
-            "gr229",
-            "gr431",
-            "gr666",
-            "kroA100",
+            "solution_50",
+            "solution_51",
+            "solution_52",
+            "solution_53",
+            "solution_54",
+            "solution_55",
+            "solution_56",
           ]
 
     steps:
