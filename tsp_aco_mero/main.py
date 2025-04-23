@@ -190,9 +190,8 @@ def run_reevo(size):
     for i in range(1, 65):
         path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
         distances = np.load(path)
-        for seed in range(1, 6):
-            obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
-            avg_costs += obj
+        obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
+        avg_costs += obj
     avg_costs = avg_costs / 64
     print(f"ReEvo - Average cost for TSP{size}: {avg_costs}")
 
