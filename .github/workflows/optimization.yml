@@ -3,6 +3,14 @@ name: MCTS Optimization
 on:
   workflow_dispatch:
     inputs:
+      solver:
+        description: "Solver name"
+        required: true
+        default: "tsp_aco_v1"
+        type: choice
+        options:
+          - tsp_aco_v1
+          - tsp_aco_v2
       iterations:
         description: "Number of iterations"
         required: true
@@ -48,8 +56,12 @@ jobs:
 
       - name: Run optimization
         run: |
+          echo "Running optimization with solver=${{ github.event.inputs.solver }}..."
           echo "Running optimization with iterations=${{ github.event.inputs.iterations }} and model=${{ github.event.inputs.model }}..."
-          python main.py mcts.iterations=${{ github.event.inputs.iterations }} llm.model=${{ github.event.inputs.model }}
+          python main.py \
+            solver=${{ github.event.inputs.solver }} \
+            mcts.iterations=${{ github.event.inputs.iterations }} \
+            llm.model=${{ github.event.inputs.model }}
 
       - name: Upload results
         uses: actions/upload-artifact@v4

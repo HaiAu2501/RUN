@@ -6,19 +6,25 @@ import os
 import sys
 from typing import List, Dict, Any, Optional, List
 from abc import ABC, abstractmethod
+from sklearn.preprocessing import MinMaxScaler
 
 def get_data(name):
 	problem = tsplib95.load(f'benchmark/{name}.tsp')
 
 	nodes = list(problem.get_nodes())
-	n = len(nodes)
+	
+	coords = np.array([problem.node_coords[node] for node in nodes])
+	scaler = MinMaxScaler()
+	coords = scaler.fit_transform(coords)
 
+	n = len(nodes)
 	distances = np.zeros((n, n))
 
-	for i_idx, i in enumerate(nodes):
-		for j_idx, j in enumerate(nodes):
-			if i != j:
-				distances[i_idx][j_idx] = problem.get_weight(i, j)
+	for i in range(n):
+		for j in range(i + 1, n):
+			distance = np.linalg.norm(coords[i] - coords[j])
+			distances[i][j] = distance
+			distances[j][i] = distance
 
 	optimal = None
 	with open('solutions', 'r') as f:
@@ -29,7 +35,7 @@ def get_data(name):
 			key, val = line.split(':', 1)
 			if key.strip() == name:
 				optimal = int(val.strip())
-	return distances, optimal
+	return distances, optimal, scaler
 
 module = importlib.import_module(sys.argv[1])
 name = sys.argv[2]
