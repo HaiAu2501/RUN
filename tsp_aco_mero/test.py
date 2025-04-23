@@ -19,10 +19,10 @@ def run_aco(size):
         n_iterations = 200
     elif size == "500":
         n_ants = 100
-        n_iterations = 500
+        n_iterations = 200
     elif size == "1000":
         n_ants = 100
-        n_iterations = 500
+        n_iterations = 200
     path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
     prob_batch = np.load(path)
     from scipy.spatial import distance_matrix
