@@ -246,7 +246,13 @@ class AntColonyOptimization:
             
             # Update pheromones
             self.update_pheromones(paths, costs)
+
+        assert self.best_path is not None, "No path found"
+        assert self.best_path.size(0) == self.n_cities, "Path size mismatch"
+        assert len(torch.unique(self.best_path)) == self.n_cities, "Path contains duplicates"
         
+        print(f"Best path: {self.best_path}")
+
         return self.best_cost
 
 
@@ -295,33 +301,12 @@ size = int(sys.argv[1])
 n_ants = int(sys.argv[2])
 n_iterations = int(sys.argv[3])
 
-# def run_aco(size):
-#     # Lấy tất cả các file trong thư mục benchmark
-#     avg_costs = 0
-#     for i in range(1, 65):
-#         path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
-#         distances = np.load(path)
-#         aco = AntColonyOptimization(
-#             distances=distances,
-#             n_ants=n_ants,
-#             n_iterations=n_iterations,
-#             seed=0,
-#             heuristic_strategy=HeuristicImpl()
-#         )
-#         cost = aco.run()
-#         avg_costs += cost
-#     avg_costs = avg_costs / 64
-#     print(f"MERO - Average cost for TSP{size}: {avg_costs}")
-
 def run_aco(size):
+    # Lấy tất cả các file trong thư mục benchmark
     avg_costs = 0
-    path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
-    prob_batch = np.load(path)
-    from scipy.spatial import distance_matrix
-    # Calculate the distance matrix
-    for i, prob in enumerate(prob_batch):
-        print(f"Processing TSP{size} {i}")
-        distances = distance_matrix(prob, prob)
+    for i in range(1, 65):
+        path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
+        distances = np.load(path)
         aco = AntColonyOptimization(
             distances=distances,
             n_ants=n_ants,
@@ -330,10 +315,31 @@ def run_aco(size):
             heuristic_strategy=HeuristicImpl()
         )
         cost = aco.run()
-        print(f"Cost for TSP{size} {i}: {cost}")
         avg_costs += cost
-    avg_costs /= len(prob_batch)
-    print(f"Average cost for TSP{size}: {avg_costs}")
+    avg_costs = avg_costs / 64
+    print(f"MERO - Average cost for TSP{size}: {avg_costs}")
+
+# def run_aco(size):
+#     avg_costs = 0
+#     path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
+#     prob_batch = np.load(path)
+#     from scipy.spatial import distance_matrix
+#     # Calculate the distance matrix
+#     for i, prob in enumerate(prob_batch):
+#         print(f"Processing TSP{size} {i}")
+#         distances = distance_matrix(prob, prob)
+#         aco = AntColonyOptimization(
+#             distances=distances,
+#             n_ants=n_ants,
+#             n_iterations=n_iterations,
+#             seed=0,
+#             heuristic_strategy=HeuristicImpl()
+#         )
+#         cost = aco.run()
+#         print(f"Cost for TSP{size} {i}: {cost}")
+#         avg_costs += cost
+#     avg_costs /= len(prob_batch)
+#     print(f"Average cost for TSP{size}: {avg_costs}")
 
 if __name__ == "__main__":
     run_aco(size)
