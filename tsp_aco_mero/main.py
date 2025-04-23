@@ -169,18 +169,19 @@ def run_aco(size, n_ants=30, n_iterations=100):
     for i in range(1, 65):
         path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
         distances = np.load(path)
-        aco = module.AntColonyOptimization(
-            distances=distances,
-            n_ants=n_ants,
-            n_iterations=n_iterations,
-            seed=0,
-            pheromone_strategy=module.PheromoneImpl(),
-            heuristic_strategy=module.HeuristicImpl(),
-            probability_strategy=module.ProbabilityImpl()
-        )
-        cost = aco.run()
-        avg_costs += cost
-    avg_costs /= 64
+        for seed in range(1, 6):
+            aco = module.AntColonyOptimization(
+                distances=distances,
+                n_ants=n_ants,
+                n_iterations=n_iterations,
+                seed=seed,
+                pheromone_strategy=module.PheromoneImpl(),
+                heuristic_strategy=module.HeuristicImpl(),
+                probability_strategy=module.ProbabilityImpl()
+            )
+            cost = aco.run()
+            avg_costs += cost
+    avg_costs = avg_costs / 5 / 64
     print(f"MERO - Average cost for TSP{size}: {avg_costs}")
 
 def run_reevo(size, n_ants=30, n_iterations=100):
@@ -188,10 +189,12 @@ def run_reevo(size, n_ants=30, n_iterations=100):
     for i in range(1, 65):
         path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
         distances = np.load(path)
-        obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
-        avg_costs += obj
-    print(f"ReEvo - Average cost for TSP{size}: {avg_costs / 64}")
+        for seed in range(1, 6):
+            obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
+            avg_costs += obj
+    avg_costs = avg_costs / 5 / 64
+    print(f"ReEvo - Average cost for TSP{size}: {avg_costs}")
 
 if __name__ == "__main__":
-    run_aco(size, n_ants=30, n_iterations=100)
-    run_reevo(size, n_ants=30, n_iterations=100)
+    run_aco(size, n_ants=50, n_iterations=100)
+    run_reevo(size, n_ants=50, n_iterations=100)
