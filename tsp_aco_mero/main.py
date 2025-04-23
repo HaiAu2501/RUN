@@ -12,7 +12,7 @@ module = importlib.import_module(sys.argv[1])
 
 def run_aco(n_ants=30, n_iterations=100):
     # Lấy tất cả các file trong thư mục benchmark
-    for size in [200, 500, 1000]:
+    for size in [20, 50, 100]:
         avg_costs = 0
         for i in range(1, 65):
             path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
