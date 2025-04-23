@@ -1,4 +1,4 @@
-name: TSP-ACO Comparison
+name: TSP-ACO on TEST
 
 on: workflow_dispatch
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scripts: ["solution_67", "solution_69", "solution_71"]
+        scripts: ["20", "50", "100"]
 
     steps:
       - name: Checkout repo
@@ -30,5 +30,5 @@ jobs:
 
       - name: Run ${{ matrix.scripts }}
         run: |
-          echo "Running ${{ matrix.scripts }}..."
-          python tsp_aco_mero/main.py ${{ matrix.scripts }}
+          echo "Running TSP${{ matrix.scripts }}..."
+          python tsp_aco_mero/main.py solution_67 ${{ matrix.scripts }}
