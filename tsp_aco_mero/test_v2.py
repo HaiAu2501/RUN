@@ -4,7 +4,7 @@ import torch
 import tsplib95
 import os
 import sys
-from typing import List, Dict, Any, Optional, List
+from typing import List, Dict, Any, Optional, List, Tuple
 from abc import ABC, abstractmethod
 from tqdm import tqdm
 
