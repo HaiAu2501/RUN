@@ -193,5 +193,5 @@ def run_reevo(size, n_ants=30, n_iterations=100):
     print(f"ReEvo - Average cost for TSP{size}: {avg_costs / 64}")
 
 if __name__ == "__main__":
-    run_aco(size, n_ants=50, n_iterations=100)
-    run_reevo(size, n_ants=50, n_iterations=100)
+    run_aco(size, n_ants=30, n_iterations=100)
+    run_reevo(size, n_ants=30, n_iterations=100)
