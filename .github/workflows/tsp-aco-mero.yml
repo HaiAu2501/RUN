@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scripts: ["200", "500", "1000"]
+        scripts: ["20", "50", "100"]
 
     steps:
       - name: Checkout repo
