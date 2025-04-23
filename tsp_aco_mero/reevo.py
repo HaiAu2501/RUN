@@ -170,7 +170,7 @@ def run_reevo(size):
 		n_ants = 100
 		n_iterations = 200
     # Lấy tất cả các file trong thư mục benchmark
-	path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
+	path = f"tsp_aco_mero/beta_tsp/TSP{size}.npy"
 	prob_batch = np.load(path)
 	from scipy.spatial import distance_matrix
 	for i, prob in enumerate(prob_batch):
@@ -194,4 +194,5 @@ def run_reevo(size):
     #     print(f"Average cost for TSP{size}: {avg_costs / 64}")
 
 if __name__ == "__main__":
+    print(f"Running ACO for TSP{size} with Beta Distribution")
     run_reevo(size)

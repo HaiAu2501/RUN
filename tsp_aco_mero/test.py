@@ -23,7 +23,7 @@ def run_aco(size):
     elif size == "1000":
         n_ants = 100
         n_iterations = 200
-    path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
+    path = f"tsp_aco_mero/beta_tsp/TSP{size}.npy"
     prob_batch = np.load(path)
     from scipy.spatial import distance_matrix
     # Calculate the distance matrix
@@ -46,4 +46,5 @@ def run_aco(size):
     print(f"Average cost for TSP{size}: {avg_costs}")
 
 if __name__ == "__main__":
+    print(f"Running ACO for TSP{size} with Beta Distribution")
     run_aco(size)
