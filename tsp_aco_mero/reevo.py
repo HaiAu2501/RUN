@@ -169,6 +169,9 @@ def run_reevo(size):
 	elif size == "1000":
 		n_ants = 100
 		n_iterations = 200
+	else:
+		n_ants = 50
+		n_iterations = 100
     # Lấy tất cả các file trong thư mục benchmark
 	path = f"tsp_aco_mero/beta_tsp/TSP{size}.npy"
 	prob_batch = np.load(path)
