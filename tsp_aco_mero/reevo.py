@@ -124,29 +124,79 @@ class ACO():
 		log_probs = dist.log_prob(actions) if require_prob else None # shape: (n_ants,)
 		return actions, log_probs
 
-def heuristics(edge_attr: np.ndarray) -> np.ndarray:
-    num_edges = edge_attr.shape[0]
-    num_attributes = edge_attr.shape[1]
 
-    heuristic_values = np.zeros_like(edge_attr)
+import numpy as np
+import networkx as nx
 
-    # Apply feature engineering on edge attributes
-    transformed_attr = np.log1p(np.abs(edge_attr))  # Taking logarithm of absolute value of attributes
+def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
+    # Basic validation
+    if not isinstance(distance_matrix, np.ndarray):
+        raise ValueError("Input must be a numpy array.")
+    
+    n = distance_matrix.shape[0]
+    
+    # Normalize the distance matrix to have values between 0 and 1
+    max_distance = np.max(distance_matrix) + 1e-10  # Prevent division by zero
+    normalized_distance = distance_matrix / max_distance
+    
+    # Create an indicator matrix for edge inclusion
+    edge_inclusion = np.zeros_like(normalized_distance)
 
-    # Normalize edge attributes
-    scaler = StandardScaler()
-    edge_attr_norm = scaler.fit_transform(transformed_attr)
+    # Create a graph from the distance matrix for centrality measures
+    G = nx.from_numpy_array(distance_matrix)
 
-    # Calculate correlation coefficients
-    correlation_matrix = np.corrcoef(edge_attr_norm.T)
+    # Calculate degree centrality
+    degree_centrality = np.array(list(nx.degree_centrality(G).values()))
 
-    # Calculate heuristic value for each edge attribute
-    for i in range(num_edges):
-        for j in range(num_attributes):
-            if edge_attr_norm[i][j] != 0:
-                heuristic_values[i][j] = np.exp(-8 * edge_attr_norm[i][j] * correlation_matrix[j][j])
+    # Calculate clustering coefficients
+    clustering_coeffs = np.array(list(nx.clustering(G).values()))
 
-    return heuristic_values
+    # Historical performance data: Placeholder (could be a refined model in practice)
+    historical_performance = np.ones_like(normalized_distance)
+
+    # Compute heuristics for edge selection combining multiple factors
+    for i in range(n):
+        for j in range(n):
+            if i != j:  # Skip self-loops
+                local_sensitivity = np.exp(-normalized_distance[i][j] * n)
+                degree_factor = degree_centrality[i] * degree_centrality[j]
+                clustering_factor = clustering_coeffs[i] * clustering_coeffs[j]
+                promising_factor = historical_performance[i][j]
+                
+                # Compute edge importance
+                edge_importance = local_sensitivity * degree_factor * clustering_factor * promising_factor
+                
+                edge_inclusion[i][j] = edge_importance
+
+    # Dynamic adaptive thresholds for edge selection based on rolling window statistics
+    threshold = np.percentile(edge_inclusion[edge_inclusion > 0], 60)  # Adjusted percentile for thresholds
+    edge_inclusion[edge_inclusion < threshold] = 0
+
+    return edge_inclusion
+
+# def heuristics(edge_attr: np.ndarray) -> np.ndarray:
+#     num_edges = edge_attr.shape[0]
+#     num_attributes = edge_attr.shape[1]
+
+#     heuristic_values = np.zeros_like(edge_attr)
+
+#     # Apply feature engineering on edge attributes
+#     transformed_attr = np.log1p(np.abs(edge_attr))  # Taking logarithm of absolute value of attributes
+
+#     # Normalize edge attributes
+#     scaler = StandardScaler()
+#     edge_attr_norm = scaler.fit_transform(transformed_attr)
+
+#     # Calculate correlation coefficients
+#     correlation_matrix = np.corrcoef(edge_attr_norm.T)
+
+#     # Calculate heuristic value for each edge attribute
+#     for i in range(num_edges):
+#         for j in range(num_attributes):
+#             if edge_attr_norm[i][j] != 0:
+#                 heuristic_values[i][j] = np.exp(-8 * edge_attr_norm[i][j] * correlation_matrix[j][j])
+
+#     return heuristic_values
 
 def solve_reevo(dist_mat, n_ants=30, n_iterations=100, seed=0):
     dist_mat[np.diag_indices_from(dist_mat)] = 1 # set diagonal to a large number
@@ -161,30 +211,28 @@ n_ants = 50
 n_iterations = 100
 
 def run_reevo(size):
+	# avg_costs = 0
+    # # Lấy tất cả các file trong thư mục benchmark
+	# path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
+	# prob_batch = np.load(path)
+	# from scipy.spatial import distance_matrix
+	# for i, prob in enumerate(prob_batch):
+	# 	print(f"Processing TSP{size} {i}")
+	# 	distances = distance_matrix(prob, prob)
+	# 	obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
+	# 	print(f"Cost for TSP{size} {i}: {obj}")
+	# 	avg_costs += obj
+
+	# avg_costs /= len(prob_batch)
+	# print(f"Average cost for TSP{size}: {avg_costs}")
+	
 	avg_costs = 0
-    # Lấy tất cả các file trong thư mục benchmark
-	path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
-	prob_batch = np.load(path)
-	from scipy.spatial import distance_matrix
-	for i, prob in enumerate(prob_batch):
-		print(f"Processing TSP{size} {i}")
-		distances = distance_matrix(prob, prob)
+	for i in range(1, 65):
+		path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
+		distances = np.load(path)
 		obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
-		print(f"Cost for TSP{size} {i}: {obj}")
 		avg_costs += obj
-
-	avg_costs /= len(prob_batch)
-	print(f"Average cost for TSP{size}: {avg_costs}")
-
-
-    # for size in [20, 50, 100]:
-    #     avg_costs = 0
-    #     for i in range(1, 65):
-    #         path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
-    #         distances = np.load(path)
-    #         obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
-    #         avg_costs += obj
-    #     print(f"Average cost for TSP{size}: {avg_costs / 64}")
+	print(f"Average cost for TSP{size}: {avg_costs / 64}")
 
 if __name__ == "__main__":
     print(f"Running ACO for TSP{size} with n_ants={n_ants} and n_iterations={n_iterations}")
