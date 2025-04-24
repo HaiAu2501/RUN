@@ -305,7 +305,7 @@ n_iterations = int(sys.argv[3])
 def run_aco(size):
     # Lấy tất cả các file trong thư mục benchmark
     avg_costs = 0
-    path = f"tsp_aco_mero/test_TSP{size}.npy"
+    path = f"tsp_aco_mero/test/test_TSP{size}.npy"
     batch = np.load(path)
     for i, prob in enumerate(batch):
         print(f"Processing TSP{size} {i}")
