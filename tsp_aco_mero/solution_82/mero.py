@@ -31,6 +31,8 @@ import tsplib95
 class History:
     """Static class to track key ACO metrics accessible from anywhere."""
     iteration: int = 0
+    n_ants: int = 0
+    n_iterations: int = 0
 
     costs: List[torch.Tensor] = []
     pheromone: List[torch.Tensor] = []
@@ -45,6 +47,7 @@ class History:
     def reset():
         """Reset all history metrics."""
         History.iteration = 0
+        History.n_ants = 0
         History.costs = []
         History.pheromone = []
         History.heuristic = []
