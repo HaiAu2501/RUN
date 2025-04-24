@@ -1,13 +1,23 @@
-name: TSP-ACO by MERO
+name: MERO on Large-scale Instances
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      solution:
+        description: "Solution file"
+        required: true
+        default: "solution_83"
+        type: choice
+        options:
+          - solution_82
+          - solution_83
 
 permissions:
   contents: read
 
 jobs:
   run-tsp-aco-mero:
-    name: TSP-ACO by MERO
+    name: MERO on Large-scale Instances
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -31,4 +41,4 @@ jobs:
       - name: Run ${{ matrix.scripts }}
         run: |
           echo "Running TSP${{ matrix.scripts }}..."
-          python tsp_aco_mero/test.py solution_67 ${{ matrix.scripts }}
+          python tsp_aco_mero/test.py ${{ github.event.inputs.solution }} ${{ matrix.scripts }}

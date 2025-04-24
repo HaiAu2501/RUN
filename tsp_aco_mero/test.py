@@ -11,8 +11,8 @@ from tqdm import tqdm
 
 module = importlib.import_module(sys.argv[1])
 size = sys.argv[2]
-n_ants = 50
-n_iterations = 100
+n_ants = 100
+n_iterations = 200
 
 def run_aco(size):
     avg_costs = 0
