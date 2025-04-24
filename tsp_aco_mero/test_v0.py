@@ -252,7 +252,7 @@ class AntColonyOptimization:
         assert self.best_path.size(0) == self.n_cities, "Path size mismatch"
         assert len(torch.unique(self.best_path)) == self.n_cities, "Path contains duplicates"
         
-        # print(f"Best path: {self.best_path}")
+        print(f"Best path: {self.best_path}")
 
         return self.best_cost
 
