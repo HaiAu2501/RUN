@@ -152,7 +152,7 @@ class AntColonyOptimization:
         History.pheromone.append(self.pheromone.clone())
         
         # Pre-compute heuristic matrix 
-        self.heuristic_matrix = self.heuristic_strategy.compute(self.distances)
+        self.heuristic_matrix = self.heuristic_strategy.compute(self.distances.clone())
         History.heuristic.append(self.heuristic_matrix.clone())
         
         self.best_path = None

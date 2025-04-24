@@ -11,6 +11,14 @@ on:
         description: "Number of iterations"
         required: true
         default: "100"
+      solution:
+        description: "Solution file"
+        required: true
+        default: "solution_82"
+        type: choice
+        options:
+          - solution_82
+          - solution_83
 
 permissions:
   contents: read
@@ -41,4 +49,4 @@ jobs:
       - name: Run ${{ matrix.scripts }}
         run: |
           echo "Running TSP${{ matrix.scripts }}..."
-          python tsp_aco_mero/main.py solution_67 ${{ matrix.scripts }} ${{ github.event.inputs.n_ants }} ${{ github.event.inputs.n_interations }}
+          python tsp_aco_mero/main.py ${{ github.event.inputs.solution }} ${{ matrix.scripts }} ${{ github.event.inputs.n_ants }} ${{ github.event.inputs.n_interations }}
