@@ -11,6 +11,7 @@ on:
         options:
           - solution_82
           - solution_83
+          - solution_94
 
 permissions:
   contents: read
