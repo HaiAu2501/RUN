@@ -6,11 +6,11 @@ on:
       n_ants:
         description: "Number of ants"
         required: true
-        default: "10"
+        default: "50"
       n_interations:
         description: "Number of iterations"
         required: true
-        default: "100"
+        default: "200"
       solution:
         description: "Solution file"
         required: true
@@ -20,6 +20,7 @@ on:
           - solution_82
           - solution_83
           - solution_94
+          - solution_97
 
 permissions:
   contents: read
