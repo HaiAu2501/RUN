@@ -185,17 +185,17 @@ def run_aco(size):
     avg_costs = avg_costs / 64
     print(f"MERO - Average cost for TSP{size}: {avg_costs}")
 
-def run_reevo(size):
-    avg_costs = 0
-    for i in range(1, 65):
-        path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
-        distances = np.load(path)
-        obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
-        avg_costs += obj
-    avg_costs = avg_costs / 64
-    print(f"ReEvo - Average cost for TSP{size}: {avg_costs}")
+# def run_reevo(size):
+#     avg_costs = 0
+#     for i in range(1, 65):
+#         path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
+#         distances = np.load(path)
+#         obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
+#         avg_costs += obj
+#     avg_costs = avg_costs / 64
+#     print(f"ReEvo - Average cost for TSP{size}: {avg_costs}")
 
 if __name__ == "__main__":
     print(f"Running ACO for TSP{size} with n_ants={n_ants} and n_iterations={n_iterations}")
     run_aco(size)
-    run_reevo(size)
+    # run_reevo(size)
