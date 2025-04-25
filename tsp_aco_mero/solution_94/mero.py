@@ -132,6 +132,8 @@ class AntColonyOptimization:
         """
         # Reset history tracking for new run
         History.reset()
+        History.n_ants = n_ants
+        History.n_iterations = n_iterations
         
         self.device = device
         self.distances = torch.tensor(distances, device=device)
