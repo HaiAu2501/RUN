@@ -19,7 +19,7 @@ class ProbabilityImpl(ProbabilityStrategy):
         """  
         # Dynamic hyperparameters derived from history with increased fluctuation
         alpha = 1.0
-        beta = 1.0
+        beta = 2.0
         if History.iteration > 0:
             alpha += np.std(History.alpha) * np.random.randn()  # Dynamic adjustment based on std deviation
             beta += np.std(History.beta) * np.random.randn()    # Dynamic adjustment based on std deviation
