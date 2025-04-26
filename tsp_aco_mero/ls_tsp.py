@@ -265,7 +265,7 @@ def run_aco(size):
     # Calculate the distance matrix
     for i, prob in enumerate(prob_batch):
         distances = distance_matrix(prob, prob)
-        best_cost = solve_tsp_aco(distances, n_ants=100, n_iterations=200)
+        best_cost = solve_tsp_aco(distances, n_ants=100, n_iterations=200, seed=0)
         print(f"Cost for TSP{size} {i}: {best_cost}")
         avg_costs += best_cost
     avg_costs /= len(prob_batch)
