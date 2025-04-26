@@ -22,6 +22,7 @@ on:
           - solution_94
           - solution_97
           - solution_101
+          - solution_103
 
 permissions:
   contents: read
