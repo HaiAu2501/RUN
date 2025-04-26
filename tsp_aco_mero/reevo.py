@@ -198,7 +198,7 @@ def heuristics(edge_attr: np.ndarray) -> np.ndarray:
 
     return heuristic_values
 
-def solve_reevo(dist_mat, n_ants=30, n_iterations=100, seed=0):
+def solve_reevo(dist_mat, n_ants=30, n_iterations=100, seed=1234):
     dist_mat[np.diag_indices_from(dist_mat)] = 1 # set diagonal to a large number
     heu = heuristics(dist_mat.copy()) + 1e-9
     heu[heu < 1e-9] = 1e-9
@@ -230,7 +230,7 @@ def run_reevo(size):
 	for i in range(1, 65):
 		path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
 		distances = np.load(path)
-		obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=0)
+		obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=1234)
 		avg_costs += obj
 	print(f"Average cost for TSP{size}: {avg_costs / 64}")
 
