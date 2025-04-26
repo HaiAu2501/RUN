@@ -207,10 +207,11 @@ def solve_reevo(dist_mat, n_ants=30, n_iterations=100, seed=1234):
     return obj
 
 size = sys.argv[1]
+seed = int(sys.argv[2])
 n_ants = 50
 n_iterations = 200
 
-def run_reevo(size):
+def run_reevo(size, seed):
 	# avg_costs = 0
     # # Lấy tất cả các file trong thư mục benchmark
 	# path = f"tsp_aco_mero/ls_tsp/TSP{size}.npy"
@@ -230,10 +231,10 @@ def run_reevo(size):
 	for i in range(1, 65):
 		path = f"tsp_aco_mero/test/TSP{size}_{i:02}.npy"
 		distances = np.load(path)
-		obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=1234)
+		obj = solve_reevo(distances, n_ants=n_ants, n_iterations=n_iterations, seed=seed)
 		avg_costs += obj
 	print(f"Average cost for TSP{size}: {avg_costs / 64}")
 
 if __name__ == "__main__":
-    print(f"Running ACO for TSP{size} with n_ants={n_ants} and n_iterations={n_iterations}")
-    run_reevo(size)
+    print(f"Running ACO for TSP{size} with n_ants={n_ants} and n_iterations={n_iterations}, seed={seed}")
+    run_reevo(size, seed)

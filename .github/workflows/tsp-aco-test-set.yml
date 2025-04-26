@@ -24,6 +24,15 @@ on:
           - solution_101
           - solution_103
           - solution_104
+      seed:
+        description: "Random seed"
+        required: true
+        default: "0"
+        type: choice
+        options:
+          - 0
+          - 1234
+          - 42
 
 permissions:
   contents: read

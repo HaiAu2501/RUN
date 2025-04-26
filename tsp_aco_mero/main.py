@@ -164,8 +164,9 @@ module = importlib.import_module(sys.argv[1])
 size = sys.argv[2]
 n_ants = int(sys.argv[3])
 n_iterations = int(sys.argv[4])
+seed = int(sys.argv[5])
 
-def run_aco(size):
+def run_aco(size, seed):
     # Lấy tất cả các file trong thư mục benchmark
     avg_costs = 0
     for i in range(1, 65):
@@ -175,7 +176,7 @@ def run_aco(size):
             distances=distances,
             n_ants=n_ants,
             n_iterations=n_iterations,
-            seed=0,
+            seed=seed,
             pheromone_strategy=module.PheromoneImpl(),
             heuristic_strategy=module.HeuristicImpl(),
             probability_strategy=module.ProbabilityImpl()
@@ -196,6 +197,6 @@ def run_aco(size):
 #     print(f"ReEvo - Average cost for TSP{size}: {avg_costs}")
 
 if __name__ == "__main__":
-    print(f"Running ACO for TSP{size} with n_ants={n_ants} and n_iterations={n_iterations}")
-    run_aco(size)
+    print(f"Running ACO for TSP{size} with n_ants={n_ants} and n_iterations={n_iterations}, seed={seed}")
+    run_aco(size, seed)
     # run_reevo(size)

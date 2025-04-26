@@ -1,6 +1,17 @@
 name: TSP-ACO by ReEvo
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Random seed"
+        required: true
+        default: "0"
+        type: choice
+        options:
+          - 0
+          - 1234
+          - 42
 
 permissions:
   contents: read
@@ -31,4 +42,4 @@ jobs:
       - name: Run ${{ matrix.scripts }}
         run: |
           echo "Running TSP${{ matrix.scripts }}..."
-          python tsp_aco_mero/reevo.py ${{ matrix.scripts }}
+          python tsp_aco_mero/reevo.py ${{ matrix.scripts }} ${{ github.event.inputs.seed }}
