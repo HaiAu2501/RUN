@@ -42,7 +42,7 @@ jobs:
         with:
           repository: HaiAu2501/MERO
           token: ${{ secrets.CHECKOUT_TOKEN }}
-          ref: main
+          ref: fast-version
 
       - name: Set up Python
         uses: actions/setup-python@v5
