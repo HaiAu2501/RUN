@@ -228,7 +228,7 @@ else:
 
 def run_aco(seed=0):
 	costs = []
-	path = f"datasets/test_TSP{size}.npy"
+	path = f"tsp_aco/datasets/test_TSP{size}.npy"
 	batch = np.load(path)
 	for i, prob in enumerate(batch):
 		distances = distance_matrix(prob, prob)
