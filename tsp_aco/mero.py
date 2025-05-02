@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 
-SEED = sys.argv[2]
+SEED = int(sys.argv[2])
 
 def initialize(distances: np.ndarray, seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
     np.random.seed(SEED)
