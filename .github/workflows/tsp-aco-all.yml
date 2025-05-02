@@ -6,59 +6,59 @@ permissions:
   contents: read
 
 jobs:
-  tsp-aco-aco:
-    name: TSP-ACO-ACO
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        scripts: ["20", "50", "100", "200", "500", "1000"]
+  # tsp-aco-aco:
+  #   name: TSP-ACO-ACO
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       scripts: ["20", "50", "100", "200", "500", "1000"]
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repo
+  #       uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+  #         cache: "pip"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+  #     - name: Install dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install -r requirements.txt
 
-      - name: Run TSP${{ matrix.scripts }}
-        run: |
-          echo "Running TSP${{ matrix.scripts }}"
-          python tsp_aco/aco.py ${{ matrix.scripts }}
+  #     - name: Run TSP${{ matrix.scripts }}
+  #       run: |
+  #         echo "Running TSP${{ matrix.scripts }}"
+  #         python tsp_aco/aco.py ${{ matrix.scripts }}
   
-  tsp-aco-eoh:
-    name: TSP-ACO-EoH
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        scripts: ["20", "50", "100", "200", "500", "1000"]
+  # tsp-aco-eoh:
+  #   name: TSP-ACO-EoH
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       scripts: ["20", "50", "100", "200", "500", "1000"]
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repo
+  #       uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+  #         cache: "pip"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+  #     - name: Install dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install -r requirements.txt
 
-      - name: Run TSP${{ matrix.scripts }}
-        run: |
-          echo "Running TSP${{ matrix.scripts }}"
-          python tsp_aco/eoh.py ${{ matrix.scripts }}
+  #     - name: Run TSP${{ matrix.scripts }}
+  #       run: |
+  #         echo "Running TSP${{ matrix.scripts }}"
+  #         python tsp_aco/eoh.py ${{ matrix.scripts }}
 
   tsp-aco-reevo:
     name: TSP-ACO-ReEvo
@@ -87,29 +87,29 @@ jobs:
           echo "Running TSP${{ matrix.scripts }}"
           python tsp_aco/reevo.py ${{ matrix.scripts }}  
 
-  tsp-aco-mero:
-    name: TSP-ACO-MERO
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        scripts: ["20", "50", "100", "200", "500", "1000"]
+  # tsp-aco-mero:
+  #   name: TSP-ACO-MERO
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       scripts: ["20", "50", "100", "200", "500", "1000"]
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repo
+  #       uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+  #         cache: "pip"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+  #     - name: Install dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install -r requirements.txt
 
-      - name: Run TSP${{ matrix.scripts }}
-        run: |
-          echo "Running TSP${{ matrix.scripts }}"
-          python tsp_aco/mero.py ${{ matrix.scripts }}  
+  #     - name: Run TSP${{ matrix.scripts }}
+  #       run: |
+  #         echo "Running TSP${{ matrix.scripts }}"
+  #         python tsp_aco/mero.py ${{ matrix.scripts }}  

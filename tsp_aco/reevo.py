@@ -127,55 +127,54 @@ class ACO():
 		log_probs = dist.log_prob(actions) if require_prob else None # shape: (n_ants,)
 		return actions, log_probs
 
-
-import numpy as np
-import networkx as nx
+from sklearn.cluster import KMeans
 
 def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
-    # Basic validation
-    if not isinstance(distance_matrix, np.ndarray):
-        raise ValueError("Input must be a numpy array.")
-    
-    n = distance_matrix.shape[0]
-    
-    # Normalize the distance matrix to have values between 0 and 1
-    max_distance = np.max(distance_matrix) + 1e-10  # Prevent division by zero
-    normalized_distance = distance_matrix / max_distance
-    
-    # Create an indicator matrix for edge inclusion
-    edge_inclusion = np.zeros_like(normalized_distance)
+    num_nodes = distance_matrix.shape[0]
+    heuristics_matrix = np.zeros_like(distance_matrix)
 
-    # Create a graph from the distance matrix for centrality measures
-    G = nx.from_numpy_array(distance_matrix)
+    # Calculate total distances for each node
+    total_distances = np.sum(distance_matrix, axis=1)
 
-    # Calculate degree centrality
-    degree_centrality = np.array(list(nx.degree_centrality(G).values()))
+    # K-Means clustering to identify clusters
+    num_clusters = min(num_nodes // 2, 10)
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(distance_matrix)
+    cluster_labels = kmeans.labels_
 
-    # Calculate clustering coefficients
-    clustering_coeffs = np.array(list(nx.clustering(G).values()))
+    # Dynamic edge weighting inversely related to distances with adaptive scoring
+    edge_weight = 1 / (distance_matrix + 1e-9)
 
-    # Historical performance data: Placeholder (could be a refined model in practice)
-    historical_performance = np.ones_like(normalized_distance)
+    # Compute heuristic scores based on connectivity and clustering
+    for i in range(num_nodes):
+        for j in range(num_nodes):
+            if i != j:
+                connectivity_score = (total_distances[i] + total_distances[j]) / distance_matrix[i, j]
+                cluster_similarity = 1 if cluster_labels[i] == cluster_labels[j] else 0
+                adjusted_edge_weight = edge_weight[i, j]
 
-    # Compute heuristics for edge selection combining multiple factors
-    for i in range(n):
-        for j in range(n):
-            if i != j:  # Skip self-loops
-                local_sensitivity = np.exp(-normalized_distance[i][j] * n)
-                degree_factor = degree_centrality[i] * degree_centrality[j]
-                clustering_factor = clustering_coeffs[i] * clustering_coeffs[j]
-                promising_factor = historical_performance[i][j]
-                
-                # Compute edge importance
-                edge_importance = local_sensitivity * degree_factor * clustering_factor * promising_factor
-                
-                edge_inclusion[i][j] = edge_importance
+                # Combine heuristic score with a multi-objective approach
+                heuristics_matrix[i, j] = (
+                    connectivity_score * (1 + cluster_similarity) * adjusted_edge_weight
+                )
 
-    # Dynamic adaptive thresholds for edge selection based on rolling window statistics
-    threshold = np.percentile(edge_inclusion[edge_inclusion > 0], 60)  # Adjusted percentile for thresholds
-    edge_inclusion[edge_inclusion < threshold] = 0
+    # Normalize the heuristics matrix
+    heuristics_matrix[heuristics_matrix < 0] = 0
+    max_heuristic = np.max(heuristics_matrix)
+    min_heuristic = np.min(heuristics_matrix[heuristics_matrix > 0]) if np.any(heuristics_matrix > 0) else 1
+    normalized_heuristics = (
+        (heuristics_matrix - min_heuristic) / (max_heuristic - min_heuristic)
+        if max_heuristic > min_heuristic else heuristics_matrix
+    )
 
-    return edge_inclusion
+    # Adaptive thresholding for sparsification based on node density
+    density_threshold = 0.75 if num_nodes < 100 else 0.85
+    threshold = np.quantile(normalized_heuristics[normalized_heuristics > 0], density_threshold)
+    promising_scores = np.where(normalized_heuristics >= threshold, normalized_heuristics, 0)
+
+    # Further incorporating hybrid strategies (not executed but a placeholder for future implementation)
+    # Add genetic algorithm elements or local search refinements here if applicable.
+
+    return promising_scores
 
 def solve_reevo(dist_mat, n_ants=30, n_iterations=100, seed=1234):
     dist_mat[np.diag_indices_from(dist_mat)] = 1 # set diagonal to a large number
