@@ -1,6 +1,10 @@
 import numpy as np
+import sys
 
-def initialize(distances: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+SEED = sys.argv[2]
+
+def initialize(distances: np.ndarray, seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
+    np.random.seed(SEED)
     n_cities = distances.shape[0]
 
     # Initialize heuristic using nonlinear relationships and dynamic factors
@@ -82,6 +86,7 @@ def update_pheromone(
     costs: np.ndarray,
     iteration: int,
     n_iterations: int,
+    seed: int = 0
 ) -> np.ndarray:
     """
     Simulate adaptive pheromone dynamics with exploration-enhancing and qualitative reinforcement.
@@ -104,6 +109,7 @@ def update_pheromone(
     np.ndarray, shape (n_cities, n_cities)
         Updated pheromone levels after evaporation and dynamic deposition.
     """
+    np.random.seed(SEED)
     # Dynamic evaporation based on iteration and costs (inverse)
     decay_factor = 0.95 - 0.15 * (np.mean(costs) / (np.max(costs) + 1e-10))
     pheromone *= decay_factor
@@ -214,7 +220,7 @@ def run_tsp_aco(distances, n_ants=50, n_iterations=100, seed=0):
 
     return best_cost, cost_list
 
-import sys
+
 from scipy.spatial import distance_matrix
 
 size = sys.argv[1]

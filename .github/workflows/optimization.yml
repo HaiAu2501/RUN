@@ -6,12 +6,11 @@ on:
       solver:
         description: "Solver name"
         required: true
-        default: "tsp_aco_v1"
+        default: "tsp_aco"
         type: choice
         options:
-          - tsp_aco_v0
-          - tsp_aco_v1
-          - tsp_aco_v2
+          - tsp_aco
+          - mkp_aco
       iterations:
         description: "Number of iterations"
         required: true
