@@ -13,8 +13,7 @@ def initialize(distances: np.ndarray, seed: int = 0) -> tuple[np.ndarray, np.nda
         for j in range(n_cities):
             if i != j:
                 # Non-linear attractiveness based on distance
-                attractiveness = (1 / (distances[i, j] ** 1.5)) + np.random.rand() * 0.1
-                heuristic[i, j] = attractiveness ** 2  # Square it for non-linear scaling
+                heuristic[i, j] = 1 / distances[i, j] ** 3
 
     # Normalize heuristic to ensure comparable scale
     heuristic = heuristic / heuristic.sum(axis=1, keepdims=True)
@@ -25,7 +24,7 @@ def initialize(distances: np.ndarray, seed: int = 0) -> tuple[np.ndarray, np.nda
         for j in range(n_cities):
             if i != j:
                 # Adjust pheromones based on distance and adaptability factor
-                pheromone[i, j] = 1 / distances[i, j] ** 2 + np.random.rand() * 0.05
+                pheromone[i, j] = 1 / distances[i, j] ** 2 
 
     # Normalize pheromones to allow for comparative measures
     pheromone = pheromone / pheromone.sum(axis=1, keepdims=True)
