@@ -62,7 +62,6 @@ def compute_probabilities(
     alpha = 1  # Pheromone influence factor
     beta = 1   # Heuristic influence factor
     decay = 0.9  # Non-linear pheromone decay
-    exploration_rate = 1 - (iteration / (n_iterations + 1)) 
 
     # Weighted pheromone with non-linear decay based on performance
     pheromone_weighted = np.power(pheromone, alpha) * (decay ** (n_iterations - iteration))

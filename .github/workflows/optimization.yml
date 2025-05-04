@@ -11,6 +11,7 @@ on:
         options:
           - tsp_aco
           - mkp_aco
+          - op_aco
       iterations:
         description: "Number of iterations"
         required: true
