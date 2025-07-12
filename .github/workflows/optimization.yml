@@ -9,6 +9,7 @@ on:
         default: "tsp_aco"
         type: choice
         options:
+          - tsp_aco
           - tsp_ga
           - tsp_gls
       outer_iterations:
