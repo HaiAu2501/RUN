@@ -9,6 +9,7 @@ on:
         default: "tsp_aco"
         type: choice
         options:
+<<<<<<< HEAD
           - tsp_ga
           - tsp_gls
       outer_iterations:
@@ -17,6 +18,13 @@ on:
         default: "20"
       inner_iterations:
         description: "Inner Iterations"
+=======
+          - tsp_aco
+          - mkp_aco
+          - op_aco
+      iterations:
+        description: "Number of iterations"
+>>>>>>> 059eb95a18ad48b6c36fa97411cc14593196438a
         required: true
         default: "10"
       model:
