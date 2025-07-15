@@ -1,4 +1,4 @@
-name: MATRIX-TSP-ACO Workflow
+name: MATRIX-TSP-ACO [ReEvo]
 
 on: workflow_dispatch
 
@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   run-tsp-aco:
-    name: MATRIX-TSP-ACO
+    name: MATRIX-TSP-ACO [ReEvo]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -31,4 +31,4 @@ jobs:
       - name: RUN TSP${{ matrix.scripts }}
         run: |
           echo "Running ${{ matrix.scripts }}..."
-          python tsp_aco/eval.py ${{ matrix.scripts }}
+          python tsp_aco/reevo.py ${{ matrix.scripts }}
