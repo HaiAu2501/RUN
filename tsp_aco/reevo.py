@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.cluster import KMeans
 
-def heuristics_v2(distance_matrix: np.ndarray) -> np.ndarray:
+def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
     num_nodes = distance_matrix.shape[0]
     heuristics_matrix = np.zeros_like(distance_matrix)
 
