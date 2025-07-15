@@ -27,7 +27,7 @@ def main(size):
     print(f"Processing TSP instances of size {size}...")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(current_dir, 'datasets', f'test_TSP{size}.npy')
-    list_costs = process_file(path, n_ants=50, n_iter=100)
+    list_costs = process_file(path, n_ants=100, n_iter=50)
     mean_cost = np.mean(list_costs, axis=0) # Average costs over all instances
     print(mean_cost.tolist())
 

@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scripts: ["100", "200", "300", "500", "1000"]
+        scripts: ["1000"]
 
     steps:
       - name: CHECKOUT
