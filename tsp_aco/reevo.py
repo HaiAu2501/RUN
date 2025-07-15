@@ -196,7 +196,7 @@ def run(size):
 	for i in range(n_instances):
 		coords = data[i]
 		dist_mat = distance_matrix(coords, coords)
-		costs = solve(dist_mat, n_ants=50, n_iterations=100, seed=i)
+		costs = solve(dist_mat, n_ants=100, n_iterations=50, seed=i)
 		results.append(costs)
 	return np.array(results)
 
