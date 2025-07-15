@@ -6,3 +6,4 @@ tqdm
 scipy
 networkx
 numba
+scipy
