@@ -1,4 +1,4 @@
-name: MATRIX-TSP-ACO Workflow
+name: MATRIX-TSP-ACO [EoH]
 
 on: workflow_dispatch
 
