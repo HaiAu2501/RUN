@@ -12,6 +12,9 @@ on:
           - tsp_aco
           - tsp_ga
           - tsp_gls
+          - op_aco
+          - bpp_aco
+          - cvrp_aco
       outer_iterations:
         description: "Outer Iterations"
         required: true
