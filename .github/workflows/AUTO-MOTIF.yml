@@ -113,11 +113,12 @@ jobs:
           name: optimization-results
           path: results/
 
-      - name: COPY AND RENAME OPTIMIZED FUNCTIONS
+      - name: COPY OPTIMIAZED FUNCTIONS
         run: |
           if [ -d "results" ]; then
             echo "Copying optimized functions to ${{ github.event.inputs.solver }} directory..."
             cp results/*_final_best.py ${{ github.event.inputs.solver }}/
+          fi
 
       - name: RUN EVALUATION ${{ github.event.inputs.solver }} - ${{ matrix.size }}
         run: |
