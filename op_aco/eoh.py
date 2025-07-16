@@ -253,7 +253,7 @@ import os, sys
 
 def run(size):
     print(f"Running OP-ACO-EoH for OP{size}...")
-    path = os.path.join(os.path.dirname(__file__), 'datasets', f'test_OP{size}.npy')
+    path = os.path.join(os.path.dirname(__file__), 'datasets', f'test_OP{size}.npz')
     dataset = load_dataset(path)
     n_instances = len(dataset)
     LIST = []
