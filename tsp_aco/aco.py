@@ -1,7 +1,7 @@
 import numpy as np
-from F1 import initialize
-from F2 import compute_probabilities
-from F3 import update_pheromone
+from F1_final_best import initialize
+from F2_final_best import compute_probabilities
+from F3_final_best import update_pheromone
 
 def constructive_path(n_cities, n_ants, probabilities, seed=None):
     """

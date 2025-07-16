@@ -118,19 +118,6 @@ jobs:
           if [ -d "results" ]; then
             echo "Copying optimized functions to ${{ github.event.inputs.solver }} directory..."
             cp results/*_final_best.py ${{ github.event.inputs.solver }}/
-            
-            echo "Renaming optimized functions..."
-            cd ${{ github.event.inputs.solver }}/
-            for file in *_final_best.py; do
-              if [[ $file == F*_final_best.py ]]; then
-                new_name="${file/_final_best/}"
-                mv "$file" "$new_name"
-                echo "Replaced with optimized $new_name"
-              fi
-            done
-          else
-            echo "No results found, keeping original functions"
-          fi
 
       - name: RUN EVALUATION ${{ github.event.inputs.solver }} - ${{ matrix.size }}
         run: |
