@@ -80,10 +80,10 @@ jobs:
         run: |
           if [ -d "results" ]; then
             echo "Copying optimized functions to ${{ github.event.inputs.solver }} directory..."
-            cp results/*_final_best.py ${{ github.event.inputs.solver }}/
+            cp results/*_final_best.py RUN/${{ github.event.inputs.solver }}/
             
             echo "Renaming optimized functions..."
-            cd ${{ github.event.inputs.solver }}/
+            cd RUN/${{ github.event.inputs.solver }}/
             for file in *_final_best.py; do
               if [[ $file == F*_final_best.py ]]; then
                 new_name="${file/_final_best/}"
@@ -100,7 +100,7 @@ jobs:
         with:
           name: optimized-solver
           path: |
-            ${{ github.event.inputs.solver }}/
+            RUN/${{ github.event.inputs.solver }}/
             requirements.txt
           retention-days: 90
 
@@ -133,5 +133,5 @@ jobs:
       - name: RUN EVALUATION ${{ github.event.inputs.solver }} - ${{ matrix.size }}
         run: |
           echo "Running evaluation for ${{ github.event.inputs.solver }} - ${{ matrix.size }}..."
-          cd ${{ github.event.inputs.solver }}
+          cd RUN/${{ github.event.inputs.solver }}
           python eval.py ${{ matrix.size }}
