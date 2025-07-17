@@ -549,17 +549,15 @@ def eval_instance(prizes, distances, maxlen, n_ants, n_iter, seed=0):
     return obj
 
 def run(size):
+    print(f"Running OP-ACO-MOTIF for OP{size}...")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(current_dir, 'datasets', f'test_OP{size}.npz')
     
     N_ANTS = 20
     N_ITER = 100
     
-    LIST = []
-    
-    objs = process_file(path, n_ants=N_ANTS, n_iter=N_ITER)
-    LIST.append(objs)
-    print(np.array(LIST).mean(axis=0).tolist())
+    res = process_file(path, n_ants=N_ANTS, n_iter=N_ITER)
+    print(res.mean(axis=0).tolist())
 
 if __name__ == "__main__":
     # Get mode from command line argument
