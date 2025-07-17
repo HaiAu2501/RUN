@@ -378,7 +378,7 @@ def run_op_aco(prizes, distances, max_len, n_ants=20, n_iterations=50, alpha=1, 
         pheromone_new = update_pheromone(pheromone_new, sols, objs, it, n_iterations)
 
         if it % 10 == 0:
-            list_obj.append(iter_best_obj)
+            list_obj.append(best_obj)
 
     return list_obj
 
