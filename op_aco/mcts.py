@@ -171,7 +171,7 @@ N_ANTS = 20
 
 import numpy as np
 
-def heuristics_v2(prize, distance, maxlen):
+def heuristics(prize, distance, maxlen):
     n = prize.shape[0]
     heuristics_matrix = np.zeros((n, n))
 
