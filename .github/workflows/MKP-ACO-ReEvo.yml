@@ -1,4 +1,4 @@
-name: MATRIX-MKP-ACO [EoH]
+name: MATRIX-MKP-ACO [ReEvo]
 
 on: workflow_dispatch
 
@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   run-tsp-aco:
-    name: MATRIX-MKP-ACO [EoH]
+    name: MATRIX-MKP-ACO [ReEvo]
     runs-on: ubuntu-latest
     strategy:
       matrix:
