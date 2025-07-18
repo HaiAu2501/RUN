@@ -6,60 +6,44 @@ import numpy as np
 
 def update_pheromone(pheromone: np.ndarray, sols: list, objs: np.ndarray, it: int, n_iterations: int) -> np.ndarray:
     """
-    Update guidance system based on prize collection performance with improved dynamic exploration.
-    
-    Parameters
-    ----------
-    pheromone : np.ndarray, shape (n, n)
-        Current guidance distribution matrix.
-    sols : list
-        Ant solution sequences containing node indices.
-    objs : np.ndarray, shape (n_ants,)
-        Total prize values collected by each ant.
-    it : int
-        Current optimization iteration index.
-    n_iterations : int
-        Total planned optimization iterations for adaptive tuning.
-    
-    Returns
-    -------
-    np.ndarray, shape (n, n)
-        Updated guidance levels after learning from prize collection quality.
+    Innovative pheromone updating mechanism that emphasizes adaptive learning,
+    variability in reinforcement based on solution diversity, and a novel exploration
+    strategy that opportunistically focuses on high-reward trails.
     """
-    # Define hyperparameters
-    decay = 0.95  # Maintain higher pheromone levels for exploration
-    alpha = 3.5   # Slightly reduced reinforcement value for effective exploration
-    beta = 0.8    # Maintain high adaptability through enhanced exploration scaling
+    # Hyperparameters
+    decay = 0.85                # Evaporation factor for pheromone
+    max_pheromone = 20.0        # Maximum pheromone value
+    min_pheromone = 0.5         # Minimum pheromone value to ensure exploration
+    exploration_bias = 5.0       # Emphasizes exploration more aggressively
+    diversification_factor = 0.75 # Factor to encourage diverse paths
 
-    # Apply evaporation and clip to avoid low pheromone levels
+    # Evaporate existing pheromones
     pheromone *= decay
-    pheromone = np.clip(pheromone, 0.01, None)  # Ensure pheromone never goes below 0.01
 
-    total_obj = np.sum(objs)
-    if total_obj <= 0:
-        return pheromone
-    Q = 1.0 / total_obj  # reinforce based on total performance
+    total_prizes = np.sum(objs) + 1e-7  # Add small epsilon to avoid division by zero
 
-    # Identify top performers dynamically, focusing on the top 15% of solutions
-    top_count = max(1, int(len(sols) * 0.15))
-    top_performers = np.argsort(objs)[-top_count:]
+    # Calculate average performance to determine variance
+    avg_performance = np.mean(objs)
+    std_performance = np.std(objs)
 
-    # Adaptive pheromone contribution calculation
-    for idx in top_performers:
-        sol = sols[idx]
-        obj = objs[idx]
+    # Increase contribution based on performance diversity
+    contributions = (objs - (avg_performance - std_performance)) / total_prizes
+    contributions = np.clip(contributions, 0, None)  # Ensure non-negative contributions
 
-        # Adjust contribution based on relative performance
-        contribution = (alpha * obj) * (1 + (it / n_iterations) ** beta)
+    # Normalize contributions to scale appropriately
+    contributions /= np.sum(contributions) + 1e-7
 
-        # Update pheromone over each edge in the solution path
-        for j in range(len(sol) - 1):
-            from_node = sol[j]
-            to_node = sol[j + 1]
-            pheromone[from_node, to_node] += Q * contribution
+    # Update pheromone for each ant solution dynamically
+    for i, (sol, contrib) in enumerate(zip(sols, contributions)):
+        if objs[i] > 0:
+            # Dynamic reinforcement based on solution's uniqueness
+            reinforcement = contrib * (1 + np.random.rand() * exploration_bias)  # Introduce randomness
+            for j in range(len(sol) - 1):
+                from_node = sol[j]
+                to_node = sol[j + 1]
+                pheromone[from_node, to_node] += reinforcement
 
-    # Capping pheromone levels based on maximum observed prize to control over-reinforcement
-    max_prize = np.max(objs) if total_obj > 0 else 1.0
-    pheromone = np.clip(pheromone, 0, 0.25 * max_prize)  # Higher cap to encourage exploration
+                # Capping to handle extremes
+                pheromone[from_node, to_node] = max(min(pheromone[from_node, to_node], max_pheromone), min_pheromone)
 
     return pheromone
