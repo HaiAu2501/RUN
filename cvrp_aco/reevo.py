@@ -145,63 +145,7 @@ from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import cdist
 
 def heuristics(distance_matrix: np.ndarray, coordinates: np.ndarray, demands: np.ndarray, capacity: int) -> np.ndarray:
-    
-    n = distance_matrix.shape[0]
-    promising_matrix = np.zeros_like(distance_matrix)
-
-    # Clustering based on coordinates for adaptive routing
-    clustering = DBSCAN(eps=1.0, min_samples=1).fit(coordinates)
-    labels = clustering.labels_
-
-    # Calculate total demand per cluster for demand density
-    cluster_demand = np.zeros(len(set(labels)))
-    for i in range(1, n):  # Skip depot
-        cluster_demand[labels[i]] += demands[i]
-
-    # Calculate average distances within and between clusters
-    cluster_centers = np.array([coordinates[labels == label].mean(axis=0) for label in set(labels)])
-    cluster_distances = cdist(cluster_centers, cluster_centers)
-
-    # Compute promising scores based on multiple objectives
-    for i in range(n):
-        for j in range(n):
-            if i != j and distance_matrix[i, j] > 0:
-                if demands[j] <= capacity:
-                    # Demand to distance ratio
-                    demand_distance_ratio = demands[j] / distance_matrix[i, j]
-
-                    # Demand density influence
-                    cluster_load_ratio = cluster_demand[labels[j]] / capacity
-
-                    # Efficiency based on intra-cluster distances
-                    efficiency_penalty = 1 - (cluster_distances[labels[i]][labels[j]] / (np.max(cluster_distances) + 1e-10))
-
-                    # Load balance consideration
-                    remaining_capacity = capacity - demands[j]
-                    load_balance_factor = remaining_capacity / capacity if remaining_capacity > 0 else 0
-
-                    # Historical performance adjustments
-                    historical_penalty_factor = 1 / (1 + np.square(distance_matrix[i, j]))
-
-                    # Calculate combined promising score
-                    promising_score = (demand_distance_ratio * 
-                                       cluster_load_ratio * 
-                                       efficiency_penalty * 
-                                       load_balance_factor * 
-                                       historical_penalty_factor)
-
-                    # Set the promising score in the matrix
-                    promising_matrix[i, j] = promising_score
-
-    # Sparsify the score matrix by zeroing out low-promising scores
-    promising_matrix[promising_matrix < 0.01] = 0  # Threshold for promising edges
-
-    # Normalize promising scores for comparability
-    max_score = np.max(promising_matrix)
-    if max_score > 0:
-        promising_matrix = promising_matrix / max_score  # Normalize to [0, 1]
-    
-    return promising_matrix
+    return 1 / (distance_matrix + 1e-9)
 
 
 from scipy.spatial import distance_matrix
