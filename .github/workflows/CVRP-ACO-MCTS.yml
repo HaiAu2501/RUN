@@ -1,4 +1,4 @@
-name: MATRIX-CVRP-ACO [EoH]
+name: MATRIX-CVRP-ACO [MCTS]
 
 on: workflow_dispatch
 
@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   run-tsp-aco:
-    name: MATRIX-CVRP-ACO [EoH]
+    name: MATRIX-CVRP-ACO [MCTS]
     runs-on: ubuntu-latest
     strategy:
       matrix:
