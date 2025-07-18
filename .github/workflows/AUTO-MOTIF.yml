@@ -15,6 +15,7 @@ on:
           - op_aco
           - bpp_aco
           - cvrp_aco
+          - mkp_aco
       outer_iterations:
         description: "Outer Iterations"
         required: true
