@@ -92,7 +92,7 @@ def run_cvrp_aco(distances, demands, coords, capacity, n_ants=50, n_iterations=1
     distances = np.maximum(distances, 1e-6)
 
     # Initialize heuristic and pheromone once
-    heuristic, pheromone = initialize(distances.copy(), demands, coords, capacity)
+    heuristic, pheromone = initialize(distances.copy(), demands, coords.copy(), capacity)
     
     best_cost = float('inf')
     best_solution = None

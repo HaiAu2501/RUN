@@ -194,7 +194,7 @@ def run(size):
     """
     Run the ACO algorithm for the MKP problem.
     """
-    dataset_path = os.path.join("datasets", f"test_MKP{size}.npz")
+    dataset_path = os.path.join(os.path.dirname(__file__), "datasets", f"test_MKP{size}.npz")
     dataset = np.load(dataset_path)
     prizes, weights = dataset['prizes'], dataset['weights']
     
