@@ -316,7 +316,7 @@ def gen_sol(prizes, distances, max_len, heuristic, pheromone, n_ants, alpha, bet
     
     return solutions, objs
 
-def run_op_aco(prizes, distances, max_len, n_ants=20, n_iterations=50, alpha=1, beta=1):
+def run_op_aco(prizes, distances, max_len, n_ants=20, n_iterations=50, alpha=1, beta=2):
     """
     Run Ant Colony Optimization for Orienteering Problem.
     
