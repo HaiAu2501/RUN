@@ -133,7 +133,6 @@ import os
 import sys
 import numpy as np
 from scipy.spatial import distance_matrix
-from aco import run_cvrp_aco
 
 # Problem constants
 N_ANTS = 30
