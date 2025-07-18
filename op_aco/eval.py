@@ -347,7 +347,7 @@ def run_op_aco(prizes, distances, max_len, n_ants=20, n_iterations=50, alpha=1, 
         Best solution found.
     """
     # Initialize heuristic and pheromone using F1
-    heuristic, pheromone = initialize(prizes, distances.copy(), max_len)
+    heuristic, pheromone = initialize(prizes.copy(), distances.copy(), max_len)
     
     # Add dummy node
     prizes_new, distances_new, heuristic_new, pheromone_new = add_dummy_node(prizes, distances, heuristic, pheromone)

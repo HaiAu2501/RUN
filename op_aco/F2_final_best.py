@@ -6,7 +6,7 @@ import numpy as np
 
 def update_pheromone(pheromone: np.ndarray, sols: list, objs: np.ndarray, it: int, n_iterations: int) -> np.ndarray:
     """
-    Update guidance system based on prize collection performance and exploration balance.
+    Update guidance system based on prize collection performance with improved dynamic exploration.
     
     Parameters
     ----------
@@ -20,42 +20,46 @@ def update_pheromone(pheromone: np.ndarray, sols: list, objs: np.ndarray, it: in
         Current optimization iteration index.
     n_iterations : int
         Total planned optimization iterations for adaptive tuning.
-
+    
     Returns
     -------
     np.ndarray, shape (n, n)
         Updated guidance levels after learning from prize collection quality.
     """
-    # Hyperparameters
-    decay = 0.9  # Evaporation factor for better retention
-    min_pheromone = 1e-5  # Minimum pheromone value
-    max_pheromone = 1e3  # Increased maximum to allow stronger paths
-    scaling_factor = 4.0  # Moderated scaling for balancing performance reinforcement
-    exploration_multiplier = 2.0  # Higher weight on exploration impact per iteration
-    adaptive_rate = (n_iterations - it + 1) / n_iterations  # Focus reinforcements on early phases    
-    
-    # Apply evaporation to pheromone levels
+    # Define hyperparameters
+    decay = 0.95  # Maintain higher pheromone levels for exploration
+    alpha = 3.5   # Slightly reduced reinforcement value for effective exploration
+    beta = 0.8    # Maintain high adaptability through enhanced exploration scaling
+
+    # Apply evaporation and clip to avoid low pheromone levels
     pheromone *= decay
-    pheromone = np.clip(pheromone, min_pheromone, max_pheromone)  # Clamp values
-    
-    # Calculate performance-based reinforcement scaled by an exploration bonus
-    exp_objs = np.exp(objs - np.max(objs))  # Stability adjustment for softmax
-    total_exp = np.sum(exp_objs)
-    Q = exp_objs / total_exp
-    
-    # Difference in collected prizes from best to drive exploration
-    best_obj = np.max(objs)
-    exploration_bonus = np.power(best_obj / (objs + 1e-10), exploration_multiplier)  # Encourage exploring under-performing paths
-    
-    # Contribution calculation combining performance and exploration reward
-    contribution = scaling_factor * Q * exploration_bonus * adaptive_rate
-    
-    # Update pheromone levels based on contributions from each ant's solution
-    for i, sol in enumerate(sols):
+    pheromone = np.clip(pheromone, 0.01, None)  # Ensure pheromone never goes below 0.01
+
+    total_obj = np.sum(objs)
+    if total_obj <= 0:
+        return pheromone
+    Q = 1.0 / total_obj  # reinforce based on total performance
+
+    # Identify top performers dynamically, focusing on the top 15% of solutions
+    top_count = max(1, int(len(sols) * 0.15))
+    top_performers = np.argsort(objs)[-top_count:]
+
+    # Adaptive pheromone contribution calculation
+    for idx in top_performers:
+        sol = sols[idx]
+        obj = objs[idx]
+
+        # Adjust contribution based on relative performance
+        contribution = (alpha * obj) * (1 + (it / n_iterations) ** beta)
+
+        # Update pheromone over each edge in the solution path
         for j in range(len(sol) - 1):
             from_node = sol[j]
             to_node = sol[j + 1]
-            pheromone[from_node, to_node] += contribution[i]
-            pheromone[to_node, from_node] += contribution[i]  # Bidirectional update
-    
+            pheromone[from_node, to_node] += Q * contribution
+
+    # Capping pheromone levels based on maximum observed prize to control over-reinforcement
+    max_prize = np.max(objs) if total_obj > 0 else 1.0
+    pheromone = np.clip(pheromone, 0, 0.25 * max_prize)  # Higher cap to encourage exploration
+
     return pheromone
