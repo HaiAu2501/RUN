@@ -147,52 +147,7 @@ from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import MinMaxScaler
 
 def heuristics(prize: np.ndarray, weight: np.ndarray) -> np.ndarray:
-    n, m = weight.shape
-    
-    # Calculate total utility score (prize divided by weight sum)
-    weight_sum = np.sum(weight, axis=1)
-    weight_sum[weight_sum == 0] = 1  # Prevent division by zero
-    utility = prize / weight_sum
-
-    # Calculate normalized weights (encourage selecting lighter items)
-    normalized_weight = np.max(weight, axis=1) / (np.sum(weight, axis=1) + 1e-5)  # Small constant to avoid division by zero
-    greediness_factor = 1 - normalized_weight
-
-    # Combine utility and greediness to form a preliminary score
-    preliminary_score = utility * greediness_factor
-
-    # Dynamic clustering to identify item correlations using DBSCAN
-    eps = 0.5  # Radius for clustering; can be tuned
-    min_samples = 2  # Minimum samples for a cluster
-    dbscan = DBSCAN(eps=eps, min_samples=min_samples).fit(weight)
-    clusters = dbscan.labels_
-
-    # Hierarchical clustering or density-based (DBSCAN) to refine synergy scoring
-    cluster_score_adjustment = np.zeros(n)
-    unique_clusters = np.unique(clusters)
-    
-    for cluster in unique_clusters:
-        if cluster != -1:  # Ignoring noise
-            cluster_indices = np.where(clusters == cluster)[0]
-            if cluster_indices.size > 0:
-                cluster_score_adjustment[cluster_indices] = np.mean(utility[cluster_indices])
-
-    adjusted_scores = preliminary_score * (1 + cluster_score_adjustment[clusters])
-
-    # Adaptive weight penalties with dynamic thresholds
-    overload_penalty = np.clip(weight_sum - 1, 0, None)
-    adaptive_penalty = np.exp(-overload_penalty)  # Nonlinear penalty function
-    final_scores = adjusted_scores * adaptive_penalty
-
-    # Use ML to refine synergy scoring (simple min-max normalization)
-    scaler = MinMaxScaler()
-    final_scores = scaler.fit_transform(final_scores.reshape(-1, 1)).flatten()
-
-    # Dynamic sparsification threshold based on a percentile of scores
-    threshold = np.percentile(final_scores, 30)  # Adjusted to top 30% for selection
-    final_scores[final_scores < threshold] = 0
-    
-    return final_scores
+    return prize / np.sum(weight, axis=1)
 
 ####################################
 
