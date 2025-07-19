@@ -204,19 +204,60 @@ SAMPLE_COUNT = 200
 
 ########## HEURISTICS ##########
 
-def heuristics(demand, capacity):
-    n = len(demand)
-    heuristics_matrix = np.zeros((n, n))
+import numpy as np
+from sklearn.cluster import AgglomerativeClustering
+from collections import defaultdict
+
+def heuristics(demand: np.ndarray, capacity: int, historical_patterns=None) -> np.ndarray:
+    n = demand.shape[0]
+    heuristics = np.zeros((n, n))
+
+    # Normalize demand by the capacity
+    normalized_demand = demand / capacity
+
+    # Track frequency of item pairings in historical patterns
+    pairing_frequency = defaultdict(int)
+    if historical_patterns:
+        for pattern in historical_patterns:
+            for i in range(len(pattern)):
+                for j in range(i + 1, len(pattern)):
+                    pairing_frequency[(pattern[i], pattern[j])] += 1
+
+    # Clustering to understand item similarities using a more prominent distance threshold
+    clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.3)  # Modified threshold
+    clusters = clustering.fit_predict(demand.reshape(-1, 1))
 
     for i in range(n):
         for j in range(n):
             if i != j:
-                total_size = demand[i] + demand[j]
-                if total_size <= capacity:
-                    remaining_capacity = capacity - total_size
-                    heuristics_matrix[i][j] = 1 / (remaining_capacity + 1e-5)  # Inverse of remaining capacity to prioritize lower remaining space
-                
-    return heuristics_matrix
+                combined_demand = demand[i] + demand[j]
+
+                # Check if items can fit in one bin
+                if combined_demand <= capacity:
+                    # Base score based on maximum utilization of the bin
+                    fit_score = 1 - ((capacity - combined_demand) / capacity)
+
+                    # Adjust score based on historical pairing frequency with decay factor
+                    frequency_score = pairing_frequency.get((i, j), 0) / (pairing_frequency.get((i, j), 0) + 1)
+                    decay_factor = 0.9  # Decay factor for historical frequency
+                    frequency_score *= decay_factor
+
+                    # Proximity score from clustering
+                    cluster_score = 1.0 if clusters[i] == clusters[j] else 0.5
+
+                    # Combine scores with a new emphasis on balancing factors
+                    heuristics[i][j] = fit_score * (1 + frequency_score) * cluster_score
+
+    # Normalize the heuristic values to be between 0 and 1
+    max_score = np.max(heuristics[heuristics > 0]) if np.any(heuristics > 0) else 1
+    heuristics = heuristics / max_score
+
+    # Apply dynamic penalties for inefficient combinations with a stricter threshold
+    penalty_threshold = 0.45  # Modified threshold for penalties
+    heuristics[heuristics < penalty_threshold] = 0
+    
+    return heuristics
+
 
 
 import os, sys
