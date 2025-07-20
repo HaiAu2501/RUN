@@ -22,7 +22,7 @@ def initialize(demands: np.ndarray, capacity: int) -> tuple[np.ndarray, np.ndarr
     for i in range(n):
         for j in range(n):
             if heuristic[i, j] > 0:
-                pheromone[i, j] = (1 / (1 + (demands[i] + demands[j] - capacity) + 1e-6)) ** 1.5 * heuristic[i, j]  # Strong boost on promising combinations
+                pheromone[i, j] = (1 / max(1 + (demands[i] + demands[j] - capacity), 1e-6)) ** 1.5 * heuristic[i, j]  # Strong boost on promising combinations
 
     # Normalizing pheromone levels to ensure balanced distribution
     pheromone_sum = pheromone.sum(axis=1, keepdims=True)
