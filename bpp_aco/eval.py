@@ -4,6 +4,34 @@ from math import floor
 from F1_final_best import initialize
 from F2_final_best import update_pheromone
 
+def is_valid_solution(best_path, demands, capacity, final_bins):
+    if best_path is None:
+        raise ValueError("No solution found")
+    
+    if len(best_path) != len(demands):
+        raise ValueError(f"Path length {len(best_path)} != number of items {len(demands)}")
+    
+    # Check bin assignments are valid
+    max_bin = np.max(best_path)
+    if max_bin + 1 != final_bins:
+        raise ValueError(f"Bin count mismatch: max_bin {max_bin + 1} != final_bins {final_bins}")
+    
+    # Check capacity constraints
+    bin_loads = np.zeros(final_bins)
+    for item_idx, bin_idx in enumerate(best_path):
+        if bin_idx < 0 or bin_idx >= final_bins:
+            raise ValueError(f"Invalid bin assignment: item {item_idx} -> bin {bin_idx}")
+        bin_loads[bin_idx] += demands[item_idx]
+    
+    # Check no bin exceeds capacity
+    for bin_idx, load in enumerate(bin_loads):
+        if load > capacity:
+            raise ValueError(f"Bin {bin_idx} exceeds capacity: {load} > {capacity}")
+    
+    # Check all items are assigned
+    if len(best_path) != len(demands):
+        raise ValueError("Not all items are assigned to bins")
+
 def organize_path(path: np.ndarray) -> Tuple[int, np.ndarray]:
     """Organize path to get number of bins and reorganized assignments."""
     order = {}
@@ -95,14 +123,20 @@ def run_bpp_aco(demands: np.ndarray, capacity: int, n_ants: int = 20, n_iteratio
     
     # Initialize using F1
     heuristic, pheromone = initialize(demands.copy(), capacity)
+
+    # Ensure heuristic and pheromone are finite and non-negative
+    heuristic = np.nan_to_num(heuristic, nan=0.01, posinf=1e10, neginf=0.01)
+    pheromone = np.nan_to_num(pheromone, nan=0.01, posinf=1e10, neginf=0.01)
+    
+    # Ensure minimum positive values
+    heuristic = np.maximum(heuristic, 0.01)
+    pheromone = np.maximum(pheromone, 0.01)
     
     best_cost = problem_size
     best_path = np.arange(problem_size)
-
-    list_obj = []
     
     # Main ACO loop
-    for iteration in range(n_iterations + 1):
+    for iteration in range(n_iterations):
         # Calculate probability matrix
         prob = (pheromone ** alpha) * (heuristic ** beta)
         
@@ -125,12 +159,14 @@ def run_bpp_aco(demands: np.ndarray, capacity: int, n_ants: int = 20, n_iteratio
         
         # Update pheromone using F2
         pheromone = update_pheromone(pheromone, paths, fitnesses, iteration, n_iterations)
-
-        if iteration % 5 == 0:
-            list_obj.append(best_cost)
+        pheromone = np.nan_to_num(pheromone, nan=0.01, posinf=1.0, neginf=0.01)
+        pheromone = np.maximum(pheromone, 0.01)  # Ensure minimum
     
     final_bins, _ = organize_path(best_path)
-    return list_obj
+
+    is_valid_solution(best_path, demands, capacity, final_bins)
+    
+    return final_bins
 
 import os
 import sys
