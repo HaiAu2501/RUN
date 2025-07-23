@@ -83,7 +83,7 @@ def run(size):
     PERTURBATION_MOVES = 30
     ITER_LIMIT = 1000
 
-    path = os.path.join(current_dir, 'datasets', f'test_TSP{size}.npy')
+    path = os.path.join(current_dir, 'dataset', f'test_TSP{size}.npy')
     
     # Process dataset
     results = process_file(path, PERTURBATION_MOVES, ITER_LIMIT)
