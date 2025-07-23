@@ -134,9 +134,11 @@ def run_bpp_aco(demands: np.ndarray, capacity: int, n_ants: int = 20, n_iteratio
     
     best_cost = problem_size
     best_path = np.arange(problem_size)
+
+    list_objs = []
     
     # Main ACO loop
-    for iteration in range(n_iterations):
+    for iteration in range(n_iterations + 1):
         # Calculate probability matrix
         prob = (pheromone ** alpha) * (heuristic ** beta)
         
@@ -161,12 +163,15 @@ def run_bpp_aco(demands: np.ndarray, capacity: int, n_ants: int = 20, n_iteratio
         pheromone = update_pheromone(pheromone, paths, fitnesses, iteration, n_iterations)
         pheromone = np.nan_to_num(pheromone, nan=0.01, posinf=1.0, neginf=0.01)
         pheromone = np.maximum(pheromone, 0.01)  # Ensure minimum
+
+        # Store objective values for analysis
+        list_objs.append(best_cost)
     
     final_bins, _ = organize_path(best_path)
 
     is_valid_solution(best_path, demands, capacity, final_bins)
     
-    return final_bins
+    return np.array(list_objs)
 
 import os
 import sys
