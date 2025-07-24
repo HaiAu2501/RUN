@@ -58,3 +58,6 @@ def solve():
         total_distance = sum(dist_mat[solution[i], solution[i + 1]] for i in range(n))
         opt_gap = (total_distance - OPTIMAL[name]) / OPTIMAL[name] * 100
         print(f"{name}: opt gap = {opt_gap:.2f}%")
+
+if __name__ == "__main__":
+    solve()
