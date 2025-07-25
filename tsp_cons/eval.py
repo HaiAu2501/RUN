@@ -1,6 +1,7 @@
 import os, sys
 import tsplib95
 import numpy as np
+from copy import copy
 from scipy.spatial import distance_matrix
 from F1_final_best import select_next_node
 
@@ -48,11 +49,10 @@ def solve():
         unvisited = list(range(1, n))
 
         for _ in range(n - 1):
-            next_node = select_next_node(start, 0, unvisited, dist_mat)
+            next_node = select_next_node(solution[-1], 0, copy(unvisited), copy(dist_mat))
             assert next_node in unvisited, "Next node must be unvisited"
             solution.append(next_node)
             unvisited.remove(next_node)
-            start = next_node
 
         solution.append(0)  # Return to the starting node
         total_distance = sum(dist_mat[solution[i], solution[i + 1]] for i in range(n))
