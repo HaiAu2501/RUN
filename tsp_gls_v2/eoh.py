@@ -72,7 +72,7 @@ def run(size):
         )
         
         # Calculate and print the cost of the best tour
-        best_cost = _calculate_cost(dist_matrix, best_tour)
+        best_cost = sum(dist_matrix[best_tour[i], best_tour[(i + 1) % n]] for i in range(n))
         total_cost += best_cost
     mean_cost = total_cost / n_instances
     opt_gap = (mean_cost - OPTIMAL[str(size)]) / OPTIMAL[str(size)] * 100
