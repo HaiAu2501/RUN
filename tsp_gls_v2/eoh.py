@@ -25,6 +25,25 @@ iter_limit_map = {
 
 ############# FOR HEURISTICS #############
 
+import numpy as np
+
+def heuristics(distance_matrix):
+    n = distance_matrix.shape[0]
+    heuristics_matrix = np.zeros((n, n))
+
+    # Calculate the maximum distance from each node to any other node
+    max_distances = np.max(distance_matrix, axis=1)
+
+    # Calculate the number of edges connected to each node
+    edge_counts = np.sum(np.where(distance_matrix > 0, 1, 0), axis=1)
+
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                # Calculate heuristic value by combining normalized distance with a penalty based on edge count
+                heuristics_matrix[i][j] = (distance_matrix[i][j] / (max_distances[i] + 1)) + (1 / (edge_counts[i] + 1))
+
+    return heuristics_matrix
 
 
 
