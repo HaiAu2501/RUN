@@ -5,34 +5,34 @@
 import numpy as np
 
 def generate_guide_matrix(distance_matrix: np.ndarray) -> np.ndarray:
-    n = distance_matrix.shape[0]
-    edge_importance = np.zeros((n, n))
-
-    # Hyperparameters for scaling
-    scaling_factor = 100
-    alpha_distance = 0.5  # Adjusted weight for distance impact
-    beta_frequency = 0.5   # Adjusted weight for edge usage frequency
-
-    # Calculate average distance and its scaled variance
-    valid_distances = distance_matrix[distance_matrix != 0]
-    average_distance = np.mean(valid_distances) if valid_distances.size else 1
-    distance_variance = np.var(valid_distances) if valid_distances.size else 0
-
-    # Compute edge importance
+    n = distance_matrix.shape[0]  # Number of cities
+    np.fill_diagonal(distance_matrix, np.inf)  # Ignore self-distances
+    
+    # Hyperparameters
+    distance_penalty_weight = 0.7  # Weighting for distance influence
+    connectivity_weight = 0.3  # Weighting for connectivity influence
+    
+    # Step 1: Calculate connectivity strength as a ratio of edge lengths
+    connectivity_strength = np.zeros((n, n))
+    total_distances = np.sum(np.where(distance_matrix < np.inf, distance_matrix, 0), axis=1)
     for i in range(n):
         for j in range(n):
             if i != j:
-                # Penalty considering average distance and variance
-                distance_penalty = (distance_matrix[i, j] / (average_distance + 1e-10)) * (1 + distance_variance/100)
-                edge_importance[i, j] = distance_penalty * alpha_distance
-                
-                # Usage frequency based on potential edges in the tour
-                usage_frequency = np.count_nonzero(distance_matrix[j]) / (n - 1)
-                edge_importance[i, j] += (1 - usage_frequency) * beta_frequency
-
-    # Normalize edge importance to [0, 1] more robustly
-    max_importance = np.max(edge_importance)
-    if max_importance > 0:
-        edge_importance /= max_importance  # Normalize to [0, 1] 
-
-    return edge_importance * scaling_factor  # Scale to [0, 100]
+                ratio = distance_matrix[i, j] / (total_distances[i] + 1e-10)
+                connectivity_strength[i, j] = 1 - ratio  # Closer distances yield higher scores
+    
+    # Step 2: Calculate edge importance using inverse distance and connectivity
+    edge_importance = (1 / (1 + distance_matrix)) * (1 + connectivity_weight * connectivity_strength) * distance_penalty_weight
+    
+    # Step 3: Normalize the edge importance scores
+    min_val = np.min(edge_importance)
+    max_val = np.max(edge_importance)
+    
+    if max_val - min_val > 1e-10:
+        normalized_scores = (edge_importance - min_val) / (max_val - min_val)
+    else:
+        normalized_scores = np.zeros_like(edge_importance)
+    
+    # Step 4: Invert the scores for penalty guidance
+    guide = 1 - normalized_scores  # Higher value denotes edges to avoid (penalty focus)
+    return guide
