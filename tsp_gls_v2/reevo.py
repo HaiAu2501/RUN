@@ -1,4 +1,4 @@
-import os
+import os, sys
 import numpy as np
 from scipy.spatial import distance_matrix
 from base_gls import guided_local_search, _calculate_cost
@@ -94,3 +94,7 @@ def run(size):
     mean_cost = total_cost / n_instances
     opt_gap = (mean_cost - OPTIMAL[str(size)]) / OPTIMAL[str(size)] * 100
     print(f"Opt. gap for TSP{size}: {opt_gap:.6f}%")
+
+def main():
+    size = int(sys.argv[1]) if len(sys.argv) > 1 else 50
+    run(size)
