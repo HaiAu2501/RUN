@@ -5,6 +5,13 @@ from scipy.spatial import distance_matrix
 from concurrent.futures import ThreadPoolExecutor
 from gls import run_tsp_gls
 
+OPTIMAL = {
+    "50": 5.68457994395107,
+    "100": 7.778580370400294,
+    "200": 10.71194600194464,
+    "500": 16.499886342078646
+}
+
 def solve_instance(coordinates: np.ndarray, perturbation_moves: int, iter_limit: int, seed: int) -> float:
     """
     Solve a single TSP instance using GLS.
@@ -90,6 +97,10 @@ def run(size):
     
     # Add to total cost
     print(results.mean())
+    # Calculate optimality gap
+    if str(size) in OPTIMAL:
+        opt_gap = (results.mean() - OPTIMAL[str(size)]) / OPTIMAL[str(size)] * 100
+        print(f"Optimality gap: {opt_gap:.6f}%")
 
 if __name__ == "__main__":
     # Get mode from command line argument
