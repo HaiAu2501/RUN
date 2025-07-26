@@ -5,30 +5,44 @@
 import numpy as np
 
 def generate_guide_matrix(distance_matrix: np.ndarray) -> np.ndarray:
+    n = distance_matrix.shape[0]
+    if n == 0:
+        return np.array([])  # Handle edge case for empty matrix
+
     # Hyperparameters
-    epsilon = 1e-6  # Small value to avoid division by zero
+    history_weight = 1.5  # Weight for historical edge usage, reduced for robustness
+    connectivity_weight = 2.5  # Increased importance for connectivity
+    penalty_scale = 3.0  # Scale for penalty sensitivity, increased for accentuated penalties
+    distance_scale = 1.5  # Sensitivity factor for normalized distances
 
-    # Step 1: Basic distance penalties
-    penalty_matrix = np.maximum(distance_matrix, 0)  # No negative penalties
+    # Prevent division by zero and initialize edge importance matrix
+    max_distance = np.nanmax(distance_matrix, initial=1)  # Prevent division by zero
+    normalized_distances = distance_matrix / max_distance
 
-    # Step 2: Compute average and standard deviation of distances
-    avg_distance = np.mean(penalty_matrix[penalty_matrix > 0])
-    distance_std_dev = np.std(penalty_matrix[penalty_matrix > 0])
+    # Compute average distance and cumulative distance factors
+    average_distance = np.nanmean(normalized_distances)
+    distance_deviation = np.maximum(0, normalized_distances - average_distance)
 
-    # Step 3: Adjust penalties for longer distances using standard deviation
-    distance_weights = np.where(penalty_matrix > avg_distance, 1 + (distance_std_dev / avg_distance), 1)
-    adjusted_penalty_matrix = penalty_matrix * distance_weights
+    # Improved penalty scores
+    penalty_scores = penalty_scale * np.square(distance_deviation) * np.exp(-distance_deviation)
 
-    # Step 4: Calculate edge importance using degree-based adjustment
-    city_degrees = np.sum(adjusted_penalty_matrix > 0, axis=1)  # Degree count
-    normalized_degrees = city_degrees / (np.max(city_degrees) + epsilon)  # Normalize the degrees
-    inv_degree_matrix = np.diag(1 / (normalized_degrees + epsilon))  # Inverse degree importance
+    # Calculate distance scores emphasizing the significance of various edge impacts
+    distance_scores = (normalized_distances ** distance_scale) * (1 - np.clip(distance_deviation, 0, None))
 
-    # Step 5: Combine penalties and connectivity with enhanced focus
-    edge_importance = np.dot(inv_degree_matrix, adjusted_penalty_matrix)  # Mix connectivity and penalties
+    # Assess connectivity and compute adjustments
+    connectivity_matrix = np.sum(np.isfinite(distance_matrix), axis=1)  # Count finite connections
+    connectivity_scores = connectivity_matrix / (np.max(connectivity_matrix, initial=1) + 1e-10)  # Prevent zero division
 
-    # Step 6: Normalize the final importance matrix to range [0,1]
-    max_importance = np.max(edge_importance) + epsilon
-    normalized_importance = edge_importance / max_importance
+    # Adjust penalty based on connectivity dynamics and improve edge resilience
+    connection_adjusted_penalty = penalty_scores * (connectivity_scores ** 2)
 
-    return normalized_importance
+    # Aggregate edge importance scores with refined metrics
+    edge_importance = (history_weight * distance_deviation + distance_scores * connectivity_weight + connection_adjusted_penalty)
+
+    # Normalize to ensure non-negative manageable values
+    edge_importance = np.nan_to_num(edge_importance, nan=0.0)  # Ensure no NaN values remain
+    if np.max(edge_importance) > 0:
+        edge_importance -= np.min(edge_importance)  # Shift to non-negative
+        edge_importance /= (np.max(edge_importance) + 1e-10)  # Normalize output
+
+    return edge_importance
