@@ -5,37 +5,49 @@
 import numpy as np
 
 def generate_criticality_matrix(distance_matrix: np.ndarray) -> np.ndarray:
+    """
+    Generate edge criticality matrix for adaptive penalty increments.
+    
+    Parameters
+    ----------
+    distance_matrix : np.ndarray, shape (n, n)
+        Matrix of pairwise distances between cities.
+        
+    Returns
+    -------
+    np.ndarray, shape (n, n)
+        Criticality matrix where criticality[i,j] represents the penalty
+        increment value for edge (i,j). Higher values mean faster penalty
+        accumulation for more critical edges.
+    """
+    # Hyperparameters
+    min_penalty = 0.1               # Minimum penalty increment
+    max_penalty = 75.0               # Adjusted maximum penalty increment limit
+    base_decay_rate = 0.08           # Slightly enhanced decay rate for more effective adjustment
+    distance_factor = 0.03            # Factor to enhance contribution of distance
+    randomness_variance = 0.03        # Moderate randomness to diversify edge pressure
+    effective_usage_decay = 1.8       # Base for frequency usage adjustment with logarithmic impact
+
     n = distance_matrix.shape[0]
     criticality_matrix = np.zeros((n, n))
-    edge_traversal_count = np.zeros((n, n))  # Track edge usage counts
-
-    # Hyperparameters for penalty adjustments
-    max_penalty_value = 100.0  # Increased maximum for broader exploration
-    scaling_factor = 5.0  # Adjusted scaling for better sensitivity
-    decay_rate = 0.85  # Slightly increased decay to weigh historical use more
-    weight_factor = 0.4  # Emphasizing distance while balancing usage impact
-    noise_factor = 0.1  # Increased noise to aid diversity in penalties
+    historical_penalties = np.zeros((n, n))  # Track historical penalties
+    edge_usage_count = np.zeros((n, n))  # Track edge usage frequency
 
     for i in range(n):
         for j in range(n):
             if i != j:
-                # Normalize distances ensuring stability
-                normalized_distance = 1 / (distance_matrix[i, j] + 1e-9)
-                
-                # Influence of usage with decay and noise
-                usage_influence = (edge_traversal_count[i, j] ** decay_rate) + (np.random.rand() * noise_factor)
-                
-                # Combine influences for a computed penalty
-                overall_influence = (1 - weight_factor) * normalized_distance + weight_factor * usage_influence
+                distance = distance_matrix[i, j] + 1e-6  # Avoid division by zero
+                edge_usage_count[i, j] += 1  # Increment edge usage count
+                # Calculate a dynamic penalty increment based on distance and usage frequency
+                penalty_increment = (max_penalty - distance) * distance_factor / (np.log(edge_usage_count[i, j] + 1) ** effective_usage_decay)
+                # Update historical penalties using dynamic scaling with decay
+                historical_penalties[i, j] = (1 - base_decay_rate) * historical_penalties[i, j] + penalty_increment + np.random.rand() * randomness_variance
+                # Enforce limits on penalties
+                criticality_matrix[i, j] = min(max_penalty, max(min_penalty, historical_penalties[i, j]))  
 
-                # Compute penalty based on overall influence while limiting values
-                penalty = 1 / (1 + np.exp(-scaling_factor * (normalized_distance - overall_influence)))
-                criticality_matrix[i, j] = np.clip(penalty, 0, max_penalty_value)
-
-                # Update edge usage after penalty evaluation
-                edge_traversal_count[i, j] += 1
-
-    # Normalize criticality matrix values to unified scale
-    criticality_matrix /= np.max(criticality_matrix) if np.max(criticality_matrix) > 0 else 1
+    # Normalize the criticality matrix based on its mean value
+    avg_factor = np.mean(criticality_matrix)
+    if avg_factor > 0:
+        criticality_matrix /= avg_factor
 
     return criticality_matrix

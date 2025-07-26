@@ -6,43 +6,33 @@ import numpy as np
 
 def generate_guide_matrix(distance_matrix: np.ndarray) -> np.ndarray:
     n = distance_matrix.shape[0]
-    if n == 0:
-        return np.array([])  # Handle edge case for empty matrix
+    edge_importance = np.zeros((n, n))
 
-    # Hyperparameters
-    history_weight = 1.5  # Weight for historical edge usage, reduced for robustness
-    connectivity_weight = 2.5  # Increased importance for connectivity
-    penalty_scale = 3.0  # Scale for penalty sensitivity, increased for accentuated penalties
-    distance_scale = 1.5  # Sensitivity factor for normalized distances
+    # Hyperparameters for scaling
+    scaling_factor = 100
+    alpha_distance = 0.5  # Adjusted weight for distance impact
+    beta_frequency = 0.5   # Adjusted weight for edge usage frequency
 
-    # Prevent division by zero and initialize edge importance matrix
-    max_distance = np.nanmax(distance_matrix, initial=1)  # Prevent division by zero
-    normalized_distances = distance_matrix / max_distance
+    # Calculate average distance and its scaled variance
+    valid_distances = distance_matrix[distance_matrix != 0]
+    average_distance = np.mean(valid_distances) if valid_distances.size else 1
+    distance_variance = np.var(valid_distances) if valid_distances.size else 0
 
-    # Compute average distance and cumulative distance factors
-    average_distance = np.nanmean(normalized_distances)
-    distance_deviation = np.maximum(0, normalized_distances - average_distance)
+    # Compute edge importance
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                # Penalty considering average distance and variance
+                distance_penalty = (distance_matrix[i, j] / (average_distance + 1e-10)) * (1 + distance_variance/100)
+                edge_importance[i, j] = distance_penalty * alpha_distance
+                
+                # Usage frequency based on potential edges in the tour
+                usage_frequency = np.count_nonzero(distance_matrix[j]) / (n - 1)
+                edge_importance[i, j] += (1 - usage_frequency) * beta_frequency
 
-    # Improved penalty scores
-    penalty_scores = penalty_scale * np.square(distance_deviation) * np.exp(-distance_deviation)
+    # Normalize edge importance to [0, 1] more robustly
+    max_importance = np.max(edge_importance)
+    if max_importance > 0:
+        edge_importance /= max_importance  # Normalize to [0, 1] 
 
-    # Calculate distance scores emphasizing the significance of various edge impacts
-    distance_scores = (normalized_distances ** distance_scale) * (1 - np.clip(distance_deviation, 0, None))
-
-    # Assess connectivity and compute adjustments
-    connectivity_matrix = np.sum(np.isfinite(distance_matrix), axis=1)  # Count finite connections
-    connectivity_scores = connectivity_matrix / (np.max(connectivity_matrix, initial=1) + 1e-10)  # Prevent zero division
-
-    # Adjust penalty based on connectivity dynamics and improve edge resilience
-    connection_adjusted_penalty = penalty_scores * (connectivity_scores ** 2)
-
-    # Aggregate edge importance scores with refined metrics
-    edge_importance = (history_weight * distance_deviation + distance_scores * connectivity_weight + connection_adjusted_penalty)
-
-    # Normalize to ensure non-negative manageable values
-    edge_importance = np.nan_to_num(edge_importance, nan=0.0)  # Ensure no NaN values remain
-    if np.max(edge_importance) > 0:
-        edge_importance -= np.min(edge_importance)  # Shift to non-negative
-        edge_importance /= (np.max(edge_importance) + 1e-10)  # Normalize output
-
-    return edge_importance
+    return edge_importance * scaling_factor  # Scale to [0, 100]
