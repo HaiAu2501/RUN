@@ -2,7 +2,6 @@ import numpy as np
 import numpy.typing as npt
 import numba as nb
 from F1_final_best import generate_guide_matrix
-from F2_final_best import generate_criticality_matrix
 
 FloatArray = npt.NDArray[np.float_]
 IntArray = npt.NDArray[np.int_]
@@ -83,8 +82,8 @@ def _local_search(distmat, cur_tour, fixed_i=0, count=1000):
         sum_delta += delta
     return sum_delta
 
-@nb.njit(nb.void(nb.float32[:,:], nb.float32[:,:], nb.float32, nb.float32[:,:], nb.float32[:,:], nb.uint16[:], nb.uint32), nogil=True, cache=usecache)
-def _perturbation(distmat, guide, k, criticality, penalty, cur_tour, perturbation_moves=30):
+@nb.njit(nb.void(nb.float32[:,:], nb.float32[:,:], nb.float32, nb.float32[:,:], nb.uint16[:], nb.uint32), nogil=True, cache=usecache)
+def _perturbation(distmat, guide, k, penalty, cur_tour, perturbation_moves=30):
     """Modified perturbation with adaptive k-matrix and criticality"""
     moves = 0
     n = distmat.shape[0]
@@ -93,15 +92,15 @@ def _perturbation(distmat, guide, k, criticality, penalty, cur_tour, perturbatio
         max_util = 0
         max_util_idx = 0
         for i in range(n-1):
-            j = i+1
+            j = i + 1
             u, v = cur_tour[i], cur_tour[j]
             util = guide[u, v] / (1.0 + penalty[u, v])
             if util > max_util:
                 max_util_idx, max_util = i, util
 
         # Apply adaptive penalty increment using criticality matrix
-        u, v = cur_tour[max_util_idx], cur_tour[max_util_idx+1]
-        penalty[u, v] += criticality[u, v]
+        u, v = cur_tour[max_util_idx], cur_tour[max_util_idx + 1]
+        penalty[u, v] += 1.0
         
         # Create guided distance matrix 
         edge_weight_guided = distmat + k * penalty
@@ -133,8 +132,8 @@ def _init_nearest_neighbor(distmat, start):
         visited[min_idx] = True
     return tour
 
-@nb.njit(nb.uint16[:](nb.float32[:,:], nb.float32[:,:], nb.float32[:,:], nb.uint16, nb.int32, nb.uint16), nogil=True, cache=usecache)
-def _guided_local_search(distmat, guide, criticality, start, perturbation_moves=30, iter_limit=1000):
+@nb.njit(nb.uint16[:](nb.float32[:,:], nb.float32[:,:], nb.uint16, nb.int32, nb.uint16), nogil=True, cache=usecache)
+def _guided_local_search(distmat, guide, start, perturbation_moves=30, iter_limit=1000):
     """Core GLS algorithm with adaptive matrices"""
     penalty = np.zeros_like(distmat)
 
@@ -147,7 +146,7 @@ def _guided_local_search(distmat, guide, criticality, start, perturbation_moves=
     
     # Main GLS loop
     for _ in range(iter_limit):
-        _perturbation(distmat, guide, k, criticality, penalty, cur_tour, perturbation_moves)
+        _perturbation(distmat, guide, k, penalty, cur_tour, perturbation_moves)
         _local_search(distmat, cur_tour, 0, 1000)
         cur_cost = _calculate_cost(distmat, cur_tour)
         if cur_cost < best_cost:
@@ -179,18 +178,13 @@ def run_tsp_gls(
 
     # Generate adaptive matrices using F2 and F3
     guide = generate_guide_matrix(distmat.copy())
-    criticality = generate_criticality_matrix(distmat.copy())
 
     if np.isnan(guide).any() or np.isinf(guide).any():
         raise ValueError("Guide matrix contains NaN or Inf values.")
-
-    if np.isnan(criticality).any() or np.isinf(criticality).any():
-        raise ValueError("Criticality matrix contains NaN or Inf values.")
     
     best_tour = _guided_local_search(
         distmat=distmat.astype(np.float32),
         guide=guide.astype(np.float32),
-        criticality=criticality.astype(np.float32),
         start=0,
         perturbation_moves=perturbation_moves,
         iter_limit=iter_limit,
