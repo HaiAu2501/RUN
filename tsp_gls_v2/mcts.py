@@ -60,6 +60,6 @@ def run(size):
     opt_gap = (mean_cost - OPTIMAL[str(size)]) / OPTIMAL[str(size)] * 100
     print(f"Opt. gap for TSP{size}: {opt_gap:.6f}%")
 
-def main():
+if __name__ == "__main__":
     size = int(sys.argv[1]) if len(sys.argv) > 1 else 50
     run(size)
