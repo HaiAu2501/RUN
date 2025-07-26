@@ -26,42 +26,57 @@ iter_limit_map = {
 ############# FOR HEURISTICS #############
 
 import numpy as np
+from scipy.stats import skew
 
 def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
     n = distance_matrix.shape[0]
-    heuristic_matrix = np.zeros_like(distance_matrix, dtype=float)
-    
-    # Tracking frequency of each edge being included in a solution
-    edge_frequency = np.zeros_like(distance_matrix, dtype=float)
+    heuristics_matrix = np.zeros((n, n))
 
-    # Calculate cumulative distance to incorporate dynamic penalties
-    cumulative_distance = np.sum(distance_matrix, axis=1)
+    # Calculate statistical measures of distances for each node
+    avg_distance = np.mean(distance_matrix, axis=1)
+    median_distance = np.median(distance_matrix, axis=1)
+    skewness_distance = skew(distance_matrix, axis=1, nan_policy='omit')
+
+    # Count edges for nodes (connectivity)
+    edge_count = np.sum(distance_matrix != np.inf, axis=1)
 
     for i in range(n):
         for j in range(n):
             if i != j:
-                # Average distance from i considering only valid distances (not inf)
-                valid_distances = distance_matrix[i][distance_matrix[i] != np.inf]
-                if valid_distances.size > 0:
-                    avg_distance_from_i = np.mean(valid_distances)
-                    # Base heuristic adjusted by average distance
-                    heuristic_matrix[i, j] = distance_matrix[i, j] / avg_distance_from_i
-                
-                # Introduce a penalty for long edges dynamically based on cumulative distance
-                if distance_matrix[i, j] > 1.5 * avg_distance_from_i:
-                    heuristic_matrix[i, j] += 1.0
-                
-                # Increment edge frequency (this can be from previous iterations in practice)
-                edge_frequency[i, j] += 1
-                
-                # Consider cumulative path cost to discourage reinserting already used edges
-                heuristic_matrix[i, j] += edge_frequency[i, j] * (distance_matrix[i, j] / (1 + cumulative_distance[i]))
+                edge_weight = distance_matrix[i, j]
+                degree_i = edge_count[i]
+                degree_j = edge_count[j]
 
-                # If j is the starting point (assumed node 0), add a reward for keeping it
-                if j == 0:
-                    heuristic_matrix[i, j] *= 0.5
+                # Base heuristic value based on edge weight and connectivity
+                heuristics_matrix[i, j] = edge_weight * (degree_i + degree_j)
 
-    return heuristic_matrix
+                # Adaptive penalties for edges based on average and median distances
+                if edge_weight > avg_distance[i]:
+                    heuristics_matrix[i, j] *= 1.5
+                
+                if edge_weight > median_distance[i]:
+                    heuristics_matrix[i, j] += (edge_weight - median_distance[i]) ** 2
+
+                # Penalty for low connectivity edges and skewness
+                if degree_i + degree_j > 0:
+                    heuristics_matrix[i, j] += (1 / (degree_i + degree_j)) * 10
+                
+                # Incorporate skewness-based penalties dynamically
+                heuristics_matrix[i, j] += np.abs(skewness_distance[i]) * 2  
+
+                # Favor edges that contribute to a well-connected structure
+                if degree_i > 1 and degree_j > 1:
+                    heuristics_matrix[i, j] *= 0.9  
+
+                # Additional clustering insight: penalize edges that promote longer routes
+                heuristics_matrix[i, j] += (np.std(distance_matrix[i]) + np.std(distance_matrix[j])) * 0.5
+
+    # Normalize to ensure heuristics values are on a consistent scale
+    max_value = np.max(heuristics_matrix) if np.max(heuristics_matrix) != 0 else 1
+    heuristics_matrix /= max_value
+
+    return heuristics_matrix
+
 
 
 ##########################################
