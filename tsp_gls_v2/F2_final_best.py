@@ -8,32 +8,30 @@ def generate_factor_matrix(distance_matrix: np.ndarray) -> np.ndarray:
     n = distance_matrix.shape[0]
     
     # Hyperparameters for adaptive penalty adjustments
-    penalty_scale = 0.15  # Base penalty scaling factor
+    penalty_scale = 0.2  # Base penalty scaling factor
     min_penalty_factor = 0.01  # Minimum threshold for penalties
-    max_penalty_factor = 3.0 # Upper limit for extreme penalties
+    max_penalty_factor = 3.0  # Upper limit for extreme penalties
 
-    # Calculate the non-zero average distance 
+    # Calculate the average distance while excluding self-loops
     valid_connections = distance_matrix[distance_matrix > 0]
     avg_distance = np.mean(valid_connections) if valid_connections.size > 0 else 1
-
-    # Calculate the standard deviation of distances to adapt penalties dynamically
-    distance_std = np.std(valid_connections) if valid_connections.size > 0 else 1
-
+    
     # Initialize the penalty matrix
     penalty_matrix = np.zeros((n, n))
+    connection_density = np.sum(distance_matrix > 0, axis=1) / (n - 1)
     
-    # Adaptive penalty computation based on relative distances
+    # Enhanced penalty computation with adaptive factors based on distance variance and density
     for i in range(n):
         for j in range(n):
             if i != j and distance_matrix[i, j] > 0:
                 distance = distance_matrix[i, j]
-                # Base penalty calculation
-                penalty = penalty_scale * (distance / avg_distance)
-                # Modify penalty based on its relation to avg distance and std dev
+                # Base penalty calculation considering density and average distance
+                penalty = penalty_scale * (distance / avg_distance) * (1 + connection_density[i])
+                # Non-linear adjustments for distance relative to average with sharper contrast
                 if distance < avg_distance:
                     penalty *= 0.5  # Lower penalty for shorter distances
-                elif distance > avg_distance + distance_std:
-                    penalty *= 2.0  # Increased penalty for distances significantly above average
+                elif distance > 1.5 * avg_distance:
+                    penalty *= 2.0  # Increased penalty for longer distances
                 # Clip the penalty to the defined range
                 penalty_matrix[i, j] = min(max(penalty, min_penalty_factor), max_penalty_factor)
             else:
