@@ -180,25 +180,40 @@ def multi_start_guided_local_search(
         return best_tour
 
 def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
-    # Calculate the average distance for each node
-    average_distance = np.mean(distance_matrix, axis=1)
-
-    # Calculate the distance ranking for each node
-    distance_ranking = np.argsort(distance_matrix, axis=1)
+    n = distance_matrix.shape[0]
+    heuristic_matrix = np.zeros_like(distance_matrix, dtype=float)
     
-    # Calculate the mean of the closest distances for each node
-    closest_mean_distance = np.mean(distance_matrix[np.arange(distance_matrix.shape[0])[:, None], distance_ranking[:, 1:5]], axis=1)
+    # Tracking frequency of each edge being included in a solution
+    edge_frequency = np.zeros_like(distance_matrix, dtype=float)
 
-    # Initialize the indicator matrix and calculate ratio of distance to average distance
-    indicators = distance_matrix / average_distance[:, np.newaxis]
+    # Calculate cumulative distance to incorporate dynamic penalties
+    cumulative_distance = np.sum(distance_matrix, axis=1)
 
-    # Set diagonal elements to np.inf
-    np.fill_diagonal(indicators, np.inf)
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                # Average distance from i considering only valid distances (not inf)
+                valid_distances = distance_matrix[i][distance_matrix[i] != np.inf]
+                if valid_distances.size > 0:
+                    avg_distance_from_i = np.mean(valid_distances)
+                    # Base heuristic adjusted by average distance
+                    heuristic_matrix[i, j] = distance_matrix[i, j] / avg_distance_from_i
+                
+                # Introduce a penalty for long edges dynamically based on cumulative distance
+                if distance_matrix[i, j] > 1.5 * avg_distance_from_i:
+                    heuristic_matrix[i, j] += 1.0
+                
+                # Increment edge frequency (this can be from previous iterations in practice)
+                edge_frequency[i, j] += 1
+                
+                # Consider cumulative path cost to discourage reinserting already used edges
+                heuristic_matrix[i, j] += edge_frequency[i, j] * (distance_matrix[i, j] / (1 + cumulative_distance[i]))
 
-    # Adjust the indicator matrix using the statistical measure
-    indicators += closest_mean_distance[:, np.newaxis] / np.sum(distance_matrix, axis=1)[:, np.newaxis]
+                # If j is the starting point (assumed node 0), add a reward for keeping it
+                if j == 0:
+                    heuristic_matrix[i, j] *= 0.5
 
-    return indicators
+    return heuristic_matrix
 
 import os
 import sys
@@ -206,14 +221,13 @@ from scipy.spatial import distance_matrix
 
 def run(size):
     print(f"Running TSP-Guided Local Search (ReEvo) for TSP{size}...")
-    path = os.path.join(os.path.dirname(__file__), 'datasets', f'test_TSP{size}.npy')
+    path = os.path.join(os.path.dirname(__file__), 'dataset', f'test_TSP{size}.npy')
     data = np.load(path)  # shape (n_instances, size, 2)
     for i in range(data.shape[0]):
         coords = data[i]
         dist_mat = distance_matrix(coords, coords)
         n = dist_mat.shape[0]
-        heu = heuristics(dist_mat.copy()) + 1e-9
-        heu[heu < 1e-9] = 1e-9
-        best_tour = guided_local_search(dist_mat, heu, n_starts=10, perturbation_moves=n, iter_limit=1000)
+        heu = heuristics(dist_mat.copy())
+        best_tour = guided_local_search(dist_mat, heu, perturbation_moves=n, iter_limit=1000)
         cost = _calculate_cost(dist_mat, best_tour)
         print(f"Instance {i+1}: Cost = {cost}, Tour = {best_tour.tolist()}")
