@@ -163,9 +163,9 @@ def run_bpp_aco(demands: np.ndarray, capacity: int, n_ants: int = 20, n_iteratio
         pheromone = update_pheromone(pheromone, paths, fitnesses, iteration, n_iterations)
         pheromone = np.nan_to_num(pheromone, nan=0.01, posinf=1.0, neginf=0.01)
         pheromone = np.maximum(pheromone, 0.01)  # Ensure minimum
-
+        if iteration % 5 == 0:
         # Store objective values for analysis
-        list_objs.append(best_cost)
+            list_objs.append(best_cost)
     
     final_bins, _ = organize_path(best_path)
 

@@ -8,9 +8,7 @@ def initialize(demands: np.ndarray, capacity: int) -> tuple[np.ndarray, np.ndarr
     """
     Initialize heuristic and pheromone matrices for Bin Packing Problem.
     
-    This strategy creates the foundation for intelligent item placement by:
-    - Enhancing compatibility analysis by considering not just gap sizes, but also the cumulative sum of item sizes for multi-item placements.
-    - Setting initial pheromone levels to strategically guide exploration based on initial placement desirability.
+    This strategy integrates size compatibility with advanced gap analysis and dynamic pheromone adjustments to enhance placement strategies, while introducing diversity into the pheromone exploration.
     
     Parameters
     ----------
@@ -23,9 +21,9 @@ def initialize(demands: np.ndarray, capacity: int) -> tuple[np.ndarray, np.ndarr
     -------
     tuple[np.ndarray, np.ndarray]
         heuristic : np.ndarray, shape (n, n)
-            Matrix representing desirability of placing items together based on size compatibility.
+            Matrix representing desirability of placing items together based on size compatibility and computed gaps.
         pheromone : np.ndarray, shape (n, n)
-            Initial pheromone levels for item placement exploration.
+            Initial pheromone levels guiding item placement exploration.
     """
     n = len(demands)
 
@@ -35,20 +33,17 @@ def initialize(demands: np.ndarray, capacity: int) -> tuple[np.ndarray, np.ndarr
         for j in range(n):
             if demands[i] + demands[j] <= capacity:
                 heuristic[i, j] = 1.0  # Compatible sizes
+                
+    # Calculate gap sizes to enhance desirability for tighter fits
+    gaps = np.clip(capacity - demands[:, None] - demands[None, :], 0, None)
 
-    # Calculate gaps but also factor in combination counts for larger synergy potential
-    gaps = np.clip(capacity - demands[:, None] - demands[None, :], 0, None)  
-    sum_pairs = np.maximum(demands[:, None] + demands[None, :] - capacity, 0)  # Sum that exceed capacity
-
-    # Final heuristic combining compatibility, gaps and enhancing tighter fits, discouraging overflows
+    # Final heuristic combining compatibility and gaps while normalizing the desirability
     heuristic *= (1 / (1 + gaps))
-    heuristic = np.where(sum_pairs > 0, 0, heuristic)  # Set negative compatibility for overflow pairs
+    heuristic = heuristic / (heuristic.max() if heuristic.max() != 0 else 1)  # Normalize in [0, 1]
 
-    # Normalize heuristic to [0, 1] range
-    heuristic = heuristic / heuristic.max() if heuristic.max() != 0 else heuristic
-
-    # Improve pheromone initialization strategy
-    pheromone = np.random.rand(n, n) * 0.3  # Base random level [0.0, 0.3) for a lighter exploration at start
-    pheromone += np.eye(n) * 0.7  # Heavier encouragement for self-placement for better stability
+    # Enhanced pheromone levels with strategic randomness and decay based on heuristics
+    pheromone = np.random.rand(n, n) * 0.45  # Base random level scaled down
+    pheromone += np.eye(n) * 0.55  # Encourage self-placement with an increased base probability
+    pheromone = np.clip(pheromone, 0, 1)  # Ensure pheromones are bounded between 0 and 1
 
     return heuristic, pheromone
