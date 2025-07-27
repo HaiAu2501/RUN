@@ -207,18 +207,19 @@ SAMPLE_COUNT = 200
 def heuristics(demand, capacity):
     n = len(demand)
     heuristics_matrix = np.zeros((n, n))
-    
+
     for i in range(n):
         for j in range(n):
             if i != j:
-                combined_size = demand[i] + demand[j]
-                if combined_size <= capacity:
-                    unused_space = capacity - combined_size
-                    heuristics_matrix[i][j] = 1 / (unused_space + 1)  # Compatibility score based on unused space
+                remaining_space = capacity - (demand[i] + demand[j])
+                size_sum = demand[i] + demand[j]
+                if remaining_space >= 0:
+                    heuristics_matrix[i][j] = (capacity - remaining_space) / capacity  # Score based on space used
                 else:
-                    heuristics_matrix[i][j] = 0  # Not compatible
-    
+                    heuristics_matrix[i][j] = max(0, (capacity - abs(remaining_space)) / capacity)  # Penalize for exceeding capacity
+
     return heuristics_matrix
+
 
 
 
