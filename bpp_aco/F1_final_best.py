@@ -8,7 +8,9 @@ def initialize(demands: np.ndarray, capacity: int) -> tuple[np.ndarray, np.ndarr
     """
     Initialize heuristic and pheromone matrices for Bin Packing Problem.
     
-    This strategy integrates size compatibility with advanced gap analysis and dynamic pheromone adjustments to enhance placement strategies, while introducing diversity into the pheromone exploration.
+    This strategy refines item placement by:
+    - Leveraging tighter fits through density and gap analysis.
+    - Setting pheromone levels that dynamically promote combinations of compatible items.
     
     Parameters
     ----------
@@ -21,29 +23,26 @@ def initialize(demands: np.ndarray, capacity: int) -> tuple[np.ndarray, np.ndarr
     -------
     tuple[np.ndarray, np.ndarray]
         heuristic : np.ndarray, shape (n, n)
-            Matrix representing desirability of placing items together based on size compatibility and computed gaps.
+            Matrix representing desirability of placing items together based on size compatibility and effective gaps.
         pheromone : np.ndarray, shape (n, n)
-            Initial pheromone levels guiding item placement exploration.
+            Initial pheromone levels for item placement exploration with emphasis on dynamic compatibility.
     """
     n = len(demands)
 
-    # Generate compatibility matrix based on combinations fitting within bin capacity
+    # Compatibility matrix to identify fitting pairs and their desirability based on gaps and sizes
     heuristic = np.zeros((n, n))
     for i in range(n):
         for j in range(n):
             if demands[i] + demands[j] <= capacity:
-                heuristic[i, j] = 1.0  # Compatible sizes
-                
-    # Calculate gap sizes to enhance desirability for tighter fits
-    gaps = np.clip(capacity - demands[:, None] - demands[None, :], 0, None)
+                # Assign higher scores for tighter fits
+                gap = capacity - (demands[i] + demands[j])
+                heuristic[i, j] = 1.0 / (1 + gap)  # Higher score for smaller gaps
 
-    # Final heuristic combining compatibility and gaps while normalizing the desirability
-    heuristic *= (1 / (1 + gaps))
-    heuristic = heuristic / (heuristic.max() if heuristic.max() != 0 else 1)  # Normalize in [0, 1]
+    # Normalize heuristic matrix to [0, 1] range based on maximum values
+    heuristic = heuristic / (heuristic.max() if heuristic.max() != 0 else 1)
 
-    # Enhanced pheromone levels with strategic randomness and decay based on heuristics
-    pheromone = np.random.rand(n, n) * 0.45  # Base random level scaled down
-    pheromone += np.eye(n) * 0.55  # Encourage self-placement with an increased base probability
-    pheromone = np.clip(pheromone, 0, 1)  # Ensure pheromones are bounded between 0 and 1
+    # Initialize pheromone levels with an emphasis on combination compatibility
+    pheromone = np.random.rand(n, n) * 0.3 + 0.7 * np.eye(n)  # Focus on self-compatibility
+    pheromone *= heuristic  # Scale pheromone levels by heuristic desirability
 
     return heuristic, pheromone
