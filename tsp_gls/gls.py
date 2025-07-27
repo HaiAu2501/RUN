@@ -110,7 +110,7 @@ def _perturbation(distmat, guide, k, penalty, cur_tour, perturbation_moves=30):
             if fixed_i == 0 or fixed_i + 1 == n:
                 continue
             delta = _local_search(edge_weight_guided, cur_tour, fixed_i, 1)
-            if delta <= 0:
+            if delta < 0:
                 moves += 1
 
 @nb.njit(nb.uint16[:](nb.float32[:,:], nb.uint16), nogil=True, cache=usecache)
