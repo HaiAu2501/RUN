@@ -32,52 +32,34 @@ import numpy as np
 
 def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
     n = distance_matrix.shape[0]
-    heuristics_matrix = np.zeros((n, n))
-
-    # Calculate statistical measures of distances for each node
-    avg_distance = np.mean(distance_matrix, axis=1)
-    median_distance = np.median(distance_matrix, axis=1)
-    skewness_distance = skew(distance_matrix, axis=1, nan_policy='omit')
-
-    # Count edges for nodes (connectivity)
-    edge_count = np.sum(distance_matrix != np.inf, axis=1)
-
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                edge_weight = distance_matrix[i, j]
-                degree_i = edge_count[i]
-                degree_j = edge_count[j]
-
-                # Base heuristic value based on edge weight and connectivity
-                heuristics_matrix[i, j] = edge_weight * (degree_i + degree_j)
-
-                # Adaptive penalties for edges based on average and median distances
-                if edge_weight > avg_distance[i]:
-                    heuristics_matrix[i, j] *= 1.5
-                
-                if edge_weight > median_distance[i]:
-                    heuristics_matrix[i, j] += (edge_weight - median_distance[i]) ** 2
-
-                # Penalty for low connectivity edges and skewness
-                if degree_i + degree_j > 0:
-                    heuristics_matrix[i, j] += (1 / (degree_i + degree_j)) * 10
-                
-                # Incorporate skewness-based penalties dynamically
-                heuristics_matrix[i, j] += np.abs(skewness_distance[i]) * 2  
-
-                # Favor edges that contribute to a well-connected structure
-                if degree_i > 1 and degree_j > 1:
-                    heuristics_matrix[i, j] *= 0.9  
-
-                # Additional clustering insight: penalize edges that promote longer routes
-                heuristics_matrix[i, j] += (np.std(distance_matrix[i]) + np.std(distance_matrix[j])) * 0.5
-
-    # Normalize to ensure heuristics values are on a consistent scale
-    max_value = np.max(heuristics_matrix) if np.max(heuristics_matrix) != 0 else 1
-    heuristics_matrix /= max_value
-
-    return heuristics_matrix
+    
+    # Hyperparameters for combining metrics
+    distance_weight = 0.5
+    connectivity_weight = 0.3
+    variance_weight = 0.2
+    
+    # Calculation of average distance for each edge
+    average_distance = np.mean(distance_matrix, axis=1)
+    # Avoid division by zero
+    average_distance[average_distance == 0] = 1e-6
+    normalized_distances = distance_matrix / average_distance[:, np.newaxis]
+    
+    # Focus on direct usage of edges based on connectivity
+    connectivity_count = np.count_nonzero(distance_matrix < np.inf, axis=1)
+    connectivity_strength = (connectivity_count + 1e-6) / np.sum(connectivity_count)
+    
+    # Variance in distances for local edges
+    closest_indices = np.argsort(distance_matrix, axis=1)[:, 1:6]  # Using top 5 closest edges
+    local_variance = np.var(distance_matrix[np.arange(n)[:, None], closest_indices], axis=1) + 1e-6
+    normalized_variance = local_variance / np.sum(local_variance)
+    
+    # Combined importance calculation
+    importance_matrix = (distance_weight * normalized_distances + 
+                         connectivity_weight * connectivity_strength[:, np.newaxis] + 
+                         variance_weight * normalized_variance[:, np.newaxis])
+    
+    # Ensure non-negative results and practical limits
+    return np.clip(importance_matrix, 0, 50)  # Lower max for more aggressive penalties
 
 
 
