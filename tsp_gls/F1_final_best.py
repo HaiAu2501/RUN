@@ -3,38 +3,46 @@
 # Phase: Final round (system-aware)
 
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.cluster import KMeans
+from scipy.sparse.csgraph import minimum_spanning_tree
+
 
 def generate_guide_matrix(distance_matrix: np.ndarray) -> np.ndarray:
-    n = distance_matrix.shape[0]  # Number of cities
-    # Hyperparameters
-    penalty_factor = 3.5  # Reasonable emphasis on long edges
-    neighbor_weight = 0.5  # Influence from neighboring edges
-    edge_importance = np.zeros((n, n))  # Edge scores holder
-    standardization_factor = 1e-10  # Prevent division by zero
-
-    # Calculate average and std deviation of edge lengths
-    means = np.mean(distance_matrix, axis=1)
-    std_devs = np.std(distance_matrix, axis=1)
-
-    # Calculate overall edge lengths and neighborhood influences
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                # Squared length penalty for long edges
-                length_penalty = (distance_matrix[i, j] ** 2) / (means[i] + standardization_factor)
-
-                # Cumulative influence from neighbors (top 3)
-                neighbor_influence = np.mean(distance_matrix[i, np.argsort(distance_matrix[i])[:3]]) / (means[i] + standardization_factor)
-
-                # Combined penalty score
-                edge_importance[i, j] = (length_penalty * penalty_factor) + (neighbor_weight * neighbor_influence)
-            else:
-                edge_importance[i, j] = np.inf  # Self-loop penalty
-
-    # Normalize the edge importance matrix to enhance stability
-    min_value = np.min(edge_importance[np.isfinite(edge_importance)])
-    edge_importance[np.isfinite(edge_importance)] -= min_value
-    max_value = np.max(edge_importance[np.isfinite(edge_importance)])
-    edge_importance[np.isfinite(edge_importance)] /= (max_value if max_value > 0 else 1)
-
-    return edge_importance
+    n = distance_matrix.shape[0]  
+    if n == 0:  
+        return np.zeros((0, 0))  
+    
+    # Hyperparameters  
+    cluster_count = min(10, n // 2)  
+    scaling_factor = 1e-10  
+    locality_weight = 0.7  
+    global_weight = 0.3  
+    ranking_limit = 5  
+    
+    # Step 1: Normalize distances using combined mean and median for robustness  
+    row_means = np.mean(distance_matrix, axis=1, keepdims=True)  
+    row_medians = np.median(distance_matrix, axis=1, keepdims=True)  
+    normalized_distance = distance_matrix / (row_means + row_medians + scaling_factor)  
+    
+    # Step 2: Perform K-means clustering for robust distance evaluation  
+    kmeans = KMeans(n_clusters=cluster_count, random_state=42)  
+    clusters = kmeans.fit_predict(normalized_distance)  
+    
+    # Step 3: Calculate edge centrality using Minimum Spanning Tree  
+    mst = minimum_spanning_tree(distance_matrix).toarray()  
+    edge_centrality = np.sum(mst > 0, axis=0)  
+    
+    # Step 4: Calculate distance rankings and averages  
+    distance_rankings = np.argsort(distance_matrix, axis=1)  
+    closest_mean_distance = np.mean(distance_matrix[np.arange(n)[:, None], distance_rankings[:, 1:ranking_limit]], axis=1)  
+    further_mean_distance = np.mean(distance_matrix[np.arange(n)[:, None], distance_rankings[:, ranking_limit:10]], axis=1)  
+    
+    # Step 5: Compute edge importance matrix  
+    importance = (normalized_distance / (np.mean(normalized_distance, axis=1, keepdims=True) + scaling_factor)) * locality_weight  
+    importance += (closest_mean_distance[:, np.newaxis] * (edge_centrality / (np.sum(edge_centrality) + scaling_factor))) * global_weight  
+    density_factor = further_mean_distance[:, np.newaxis] / (np.sum(distance_matrix, axis=1, keepdims=True) + scaling_factor)  
+    importance += density_factor * (locality_weight + global_weight)  
+    np.fill_diagonal(importance, np.inf)  
+    
+    return importance
