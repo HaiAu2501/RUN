@@ -178,9 +178,6 @@ def run_tsp_gls(
 
     # Generate adaptive matrices using F2 and F3
     guide = generate_guide_matrix(distmat.copy())
-
-    if np.isnan(guide).any() or np.isinf(guide).any():
-        raise ValueError("Guide matrix contains NaN or Inf values.")
     
     best_tour = _guided_local_search(
         distmat=distmat.astype(np.float32),
