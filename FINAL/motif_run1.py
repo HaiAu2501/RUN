@@ -31,6 +31,7 @@ from scipy.stats import skew
 import numpy as np
 
 def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
+    np.random.seed(42)  # For reproducibility
     n = distance_matrix.shape[0]
     # Hyperparameters for adaptive weighting
     weight_distance = 0.5
