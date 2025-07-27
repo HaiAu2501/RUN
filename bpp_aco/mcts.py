@@ -207,35 +207,50 @@ SAMPLE_COUNT = 200
 
 import numpy as np
 
+import random
+import heapq
+
 def heuristics(demand, capacity):
     n = len(demand)
-    heuristics_matrix = np.full((n, n), -1)  # Start with all pairs as unsuitable
-
-    # Sort indices of items based on demand in ascending order for different pairing strategy
-    sorted_indices = np.argsort(demand)
-
-    # Calculate frequency of each item size to weight pairs
-    size_frequency = {size: list(demand).count(size) for size in set(demand)}
-
+    heuristics_matrix = np.zeros((n, n))
+    
+    # Randomly shuffle the indices for exploration
+    shuffled_indices = list(range(n))
+    random.shuffle(shuffled_indices)
+    
+    sorted_indices = sorted(shuffled_indices, key=lambda x: -demand[x])
+    
     for i in range(n):
-        for j in range(i + 1, n):
-            total_size = demand[sorted_indices[i]] + demand[sorted_indices[j]]
-            if total_size <= capacity:
-                available_space = capacity - total_size
-
-                # Calculate size correlation factor with a modified log component
-                size_difference = abs(demand[sorted_indices[i]] - demand[sorted_indices[j]])
-                size_correlation = 1 - (size_difference / (np.log(max(demand[sorted_indices[i]], demand[sorted_indices[j]], 1) + 1))) ** 2
-
-                # Quadratic penalty for larger pairs based on size frequency
-                penalty = (size_frequency[demand[sorted_indices[i]]] + size_frequency[demand[sorted_indices[j]]]) ** 2 * 0.05
-
-                # Combined score with new factor adjustments
-                combined_score = (capacity / (available_space + 1e-6)) ** 2 + (size_correlation * 2) - (total_size * 0.5) - penalty  # Adjusted factors
-                heuristics_matrix[sorted_indices[i]][sorted_indices[j]] = combined_score
-                heuristics_matrix[sorted_indices[j]][sorted_indices[i]] = combined_score  # Symmetric matrix
+        item_i = sorted_indices[i]
+        remaining_space = capacity - demand[item_i]
+        
+        # Priority queue to find better pairings dynamically
+        potential_pairings = []
+        
+        for j in range(n):
+            if j != item_i:
+                item_j = sorted_indices[j]
+                if demand[item_j] <= remaining_space:
+                    linear_weight = (demand[item_i] + demand[item_j]) / (remaining_space + 1)  # Linear scaling
+                    combined_compatibility_score = linear_weight / capacity  # Normalized score
+                    heapq.heappush(potential_pairings, (-combined_compatibility_score, item_j))
+        
+        count = 0
+        while potential_pairings and count < (capacity // min(demand) + 1):
+            score, item_j = heapq.heappop(potential_pairings)
+            heuristics_matrix[item_i][item_j] = -score
+            heuristics_matrix[item_j][item_i] = -score
+            
+            # Update remaining space after adding item_j
+            filled_space = demand[item_i] + demand[item_j]
+            remaining_space -= demand[item_j]
+            count += 1
+            
+            if filled_space > capacity:
+                break
 
     return heuristics_matrix
+
 
 
 
