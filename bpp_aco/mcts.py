@@ -213,43 +213,30 @@ import heapq
 def heuristics(demand, capacity):
     n = len(demand)
     heuristics_matrix = np.zeros((n, n))
-    
-    # Randomly shuffle the indices for exploration
-    shuffled_indices = list(range(n))
-    random.shuffle(shuffled_indices)
-    
-    sorted_indices = sorted(shuffled_indices, key=lambda x: -demand[x])
-    
+    normalized_demand = demand / np.sum(demand)  # Normalize demand sizes
+
     for i in range(n):
-        item_i = sorted_indices[i]
-        remaining_space = capacity - demand[item_i]
-        
-        # Priority queue to find better pairings dynamically
-        potential_pairings = []
-        
         for j in range(n):
-            if j != item_i:
-                item_j = sorted_indices[j]
-                if demand[item_j] <= remaining_space:
-                    linear_weight = (demand[item_i] + demand[item_j]) / (remaining_space + 1)  # Linear scaling
-                    combined_compatibility_score = linear_weight / capacity  # Normalized score
-                    heapq.heappush(potential_pairings, (-combined_compatibility_score, item_j))
-        
-        count = 0
-        while potential_pairings and count < (capacity // min(demand) + 1):
-            score, item_j = heapq.heappop(potential_pairings)
-            heuristics_matrix[item_i][item_j] = -score
-            heuristics_matrix[item_j][item_i] = -score
-            
-            # Update remaining space after adding item_j
-            filled_space = demand[item_i] + demand[item_j]
-            remaining_space -= demand[item_j]
-            count += 1
-            
-            if filled_space > capacity:
-                break
+            if i != j:
+                total_size = demand[i] + demand[j]
+                if total_size <= capacity:
+                    remaining_space = capacity - total_size
+                    size_difference_penalty = np.abs(normalized_demand[i] - normalized_demand[j])
+                    utilization_score = (capacity - remaining_space) / capacity
+                    
+                    # Incorporate a weight factor that dampens the score
+                    scoring_factor = 1 / (1 + size_difference_penalty + (remaining_space / capacity))
+                    
+                    heuristics_matrix[i][j] = (
+                        utilization_score * scoring_factor * 
+                        (capacity / (remaining_space + 1)**4) * 
+                        (1 - size_difference_penalty)
+                    )
+                else:
+                    heuristics_matrix[i][j] = 0  # Invalid combination
 
     return heuristics_matrix
+
 
 
 
