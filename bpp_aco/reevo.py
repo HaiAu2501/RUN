@@ -208,36 +208,28 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from collections import defaultdict
 
+from itertools import combinations
+
 def heuristics(demand: np.ndarray, capacity: int) -> np.ndarray:
     n = demand.shape[0]
     heuristics = np.zeros((n, n))
 
-    # Calculate demand ratios
-    demand_ratio = demand / capacity
-    total_demand = np.sum(demand)
+    max_demand = demand.max()
+    total_items = demand.sum()
 
-    # Normalize demand to avoid division by zero
-    normalized_demand = np.zeros(n)
-    if total_demand > 0:
-        normalized_demand = demand / total_demand
-
-    # Calculate clustering threshold based on demand percentiles
-    threshold = np.percentile(demand, 80)
-
-    # Evaluate potential fits using a linear similarity measure
     for i in range(n):
         for j in range(n):
             if i != j:
                 combined_demand = demand[i] + demand[j]
                 if combined_demand <= capacity:
-                    # Calculate linear similarity based on normalized demand
-                    similarity = 1 - np.abs(normalized_demand[i] - normalized_demand[j])
-                    heuristics[i, j] = (demand_ratio[i] + demand_ratio[j]) * similarity * 100
-
-    # Sparsify the heuristics dynamically, keeping only the top performers
-    top_fraction = 0.1
-    threshold_value = np.percentile(heuristics[heuristics > 0], 100 * (1 - top_fraction))
-    heuristics[heuristics < threshold_value] = 0
+                    # Calculate packing efficiency
+                    packing_efficiency = (capacity - combined_demand) / capacity
+                    # Incorporate diversity in item sizes
+                    size_diversity = 1 - (abs(demand[i] - demand[j]) / max_demand)
+                    # Weighted score based on packing efficiency and diversity
+                    heuristics[i][j] = packing_efficiency * size_diversity
+                else:
+                    heuristics[i][j] = 0  # Not fitting in the same bin
 
     return heuristics
 
