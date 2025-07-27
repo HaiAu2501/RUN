@@ -208,58 +208,39 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from collections import defaultdict
 
-# def heuristics(demand: np.ndarray, capacity: int, historical_patterns=None) -> np.ndarray:
-#     n = demand.shape[0]
-#     heuristics = np.zeros((n, n))
-
-#     # Normalize demand by the capacity
-#     normalized_demand = demand / capacity
-
-#     # Track frequency of item pairings in historical patterns
-#     pairing_frequency = defaultdict(int)
-#     if historical_patterns:
-#         for pattern in historical_patterns:
-#             for i in range(len(pattern)):
-#                 for j in range(i + 1, len(pattern)):
-#                     pairing_frequency[(pattern[i], pattern[j])] += 1
-
-#     # Clustering to understand item similarities using a more prominent distance threshold
-#     clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.3)  # Modified threshold
-#     clusters = clustering.fit_predict(demand.reshape(-1, 1))
-
-#     for i in range(n):
-#         for j in range(n):
-#             if i != j:
-#                 combined_demand = demand[i] + demand[j]
-
-#                 # Check if items can fit in one bin
-#                 if combined_demand <= capacity:
-#                     # Base score based on maximum utilization of the bin
-#                     fit_score = 1 - ((capacity - combined_demand) / capacity)
-
-#                     # Adjust score based on historical pairing frequency with decay factor
-#                     frequency_score = pairing_frequency.get((i, j), 0) / (pairing_frequency.get((i, j), 0) + 1)
-#                     decay_factor = 0.9  # Decay factor for historical frequency
-#                     frequency_score *= decay_factor
-
-#                     # Proximity score from clustering
-#                     cluster_score = 1.0 if clusters[i] == clusters[j] else 0.5
-
-#                     # Combine scores with a new emphasis on balancing factors
-#                     heuristics[i][j] = fit_score * (1 + frequency_score) * cluster_score
-
-#     # Normalize the heuristic values to be between 0 and 1
-#     max_score = np.max(heuristics[heuristics > 0]) if np.any(heuristics > 0) else 1
-#     heuristics = heuristics / max_score
-
-#     # Apply dynamic penalties for inefficient combinations with a stricter threshold
-#     penalty_threshold = 0.45  # Modified threshold for penalties
-#     heuristics[heuristics < penalty_threshold] = 0
-    
-#     return heuristics
-
 def heuristics(demand: np.ndarray, capacity: int) -> np.ndarray:
-    return np.tile(demand/demand.max(), (demand.shape[0], 1))
+    n = demand.shape[0]
+    heuristics = np.zeros((n, n))
+
+    # Calculate demand ratios
+    demand_ratio = demand / capacity
+    total_demand = np.sum(demand)
+
+    # Normalize demand to avoid division by zero
+    normalized_demand = np.zeros(n)
+    if total_demand > 0:
+        normalized_demand = demand / total_demand
+
+    # Calculate clustering threshold based on demand percentiles
+    threshold = np.percentile(demand, 80)
+
+    # Evaluate potential fits using a linear similarity measure
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                combined_demand = demand[i] + demand[j]
+                if combined_demand <= capacity:
+                    # Calculate linear similarity based on normalized demand
+                    similarity = 1 - np.abs(normalized_demand[i] - normalized_demand[j])
+                    heuristics[i, j] = (demand_ratio[i] + demand_ratio[j]) * similarity * 100
+
+    # Sparsify the heuristics dynamically, keeping only the top performers
+    top_fraction = 0.1
+    threshold_value = np.percentile(heuristics[heuristics > 0], 100 * (1 - top_fraction))
+    heuristics[heuristics < threshold_value] = 0
+
+    return heuristics
+
 
 
 import os, sys
