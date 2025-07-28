@@ -141,19 +141,21 @@ class ACO():
         return (visit_mask[:, 1:] == 0).all() and (actions == 0).all()    
 
 def heuristics(distance_matrix, coordinates, demands, capacity):
-    num_nodes = distance_matrix.shape[0]
-    heuristics_matrix = np.zeros_like(distance_matrix)
+    n = distance_matrix.shape[0]
+    heuristics_matrix = np.zeros((n, n))
+    scaling_factor = 1.5  # Adjust this factor to reweigh demand influence
 
-    for i in range(num_nodes):
-        for j in range(num_nodes):
+    for i in range(n):
+        for j in range(n):
             if i != j:
-                remaining_capacity = capacity - demands[i]
-                if demands[j] <= remaining_capacity and remaining_capacity >= 0:
-                    heuristics_matrix[i, j] = (1 / (distance_matrix[i, j] ** 2)) * np.log(1 + demands[j])  # Combine inverse distance squared with log of demand
+                if demands[j] <= capacity:
+                    # Calculate heuristic incorporating both demand and distance, using a logarithmic scale for demand
+                    heuristics_matrix[i, j] = (np.log(demands[j] + 1) / (distance_matrix[i, j] + 1e-6)) * (scaling_factor / (distance_matrix[i, j] ** 2))
                 else:
-                    heuristics_matrix[i, j] = 0  # Infeasible edge
+                    heuristics_matrix[i, j] = 0
 
     return heuristics_matrix
+
 
 from scipy.spatial import distance_matrix
 import inspect
