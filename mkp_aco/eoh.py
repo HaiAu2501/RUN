@@ -145,15 +145,17 @@ class ACO():
 import numpy as np
 
 def heuristics(prize, weight):
-    n = prize.shape[0]
-    m = weight.shape[1]
+    n = len(prize)
     heuristics_matrix = np.zeros(n)
     
+    max_weight = np.max(weight, axis=1)
+    
     for i in range(n):
-        if np.all(weight[i] <= 1):  # Ensure the weight constraints are met
-            heuristics_matrix[i] = prize[i] / np.max(weight[i])  # Normalize by the maximum weight component
-            
+        inverse_weight = 1 / max_weight[i] if max_weight[i] > 0 else 0
+        heuristics_matrix[i] = prize[i] * inverse_weight
+        
     return heuristics_matrix
+
 
 ####################################
 
