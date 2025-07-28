@@ -146,31 +146,68 @@ import numpy as np
 def heuristics(distance_matrix, coordinates, demands, capacity):
     n = distance_matrix.shape[0]
     heuristics_matrix = np.zeros_like(distance_matrix)
-    cumulative_distance = np.zeros(n)
-    
-    for i in range(n):
-        for j in range(n):
-            if i != j and demands[j] <= capacity:
-                # Demand-to-distance ratio with logarithmic scaling
-                ratio = np.log(demands[j] + 1) / (distance_matrix[i][j] + 1e-4)
-                # Euclidean proximity factor
-                proximity_factor = 1.0 / (np.linalg.norm(coordinates[i] - coordinates[j]) + 1e-4)
-                # Cumulative distance penalty based on vehicle's current load
-                remaining_capacity = capacity - cumulative_distance[i]
-                penalty = remaining_capacity / (cumulative_distance[i] + distance_matrix[i][j] + 1e-4)
-                # Distance penalty for excessive distance from previous nodes visited
-                distance_penalty = 1.0 / (1 + np.sum(distance_matrix[i][j] for j in range(n) if demands[j] <= remaining_capacity))
+
+    # Initialize parameters
+    visited = set()
+    routes = []
+    risk_factor_weight = 0.4  # Increased weight for risk factor
+    efficiency_weight = 0.45    # Weight for distance efficiency
+    exploration_weight = 0.15     # Reduced exploration weight
+
+    # Construct routes with a scoring approach
+    while len(visited) < n - 1:  # Exclude depot
+        current_route = [0]  # Start from depot
+        current_demand = 0
+
+        while True:
+            last_node = current_route[-1]
+            unvisited_nodes = [i for i in range(1, n) if i not in visited]
+            if not unvisited_nodes:
+                break
+
+            # Calculate modified scores
+            scores = []
+            for node in unvisited_nodes:
+                demand_ratio = demands[node] / (capacity - current_demand) if (capacity - current_demand) > 0 else 0
+                distance_efficiency = 1 / distance_matrix[last_node][node] if distance_matrix[last_node][node] > 0 else 0
                 
-                # Combine all factors
-                heuristics_matrix[i][j] = ratio * proximity_factor * penalty * distance_penalty
+                # Risk assessment based on remaining capacity and node demand
+                risk_factor = (current_demand + demands[node] - capacity) ** 2 if (current_demand + demands[node] > capacity) else 0
+                
+                # Exploration score
+                exploration_score = (1 / (1 + len([r for r in routes if node in r]))) * exploration_weight
 
-        # Update cumulative distance for node i based on demand served
-        if demands[j] <= remaining_capacity:
-            cumulative_distance[i] += demands[j]
+                score = (risk_factor_weight * risk_factor +
+                         efficiency_weight * distance_efficiency +
+                         (1 - risk_factor_weight - efficiency_weight) * demand_ratio -
+                         exploration_score)
+                scores.append(score)
 
-    # Normalize the heuristics matrix
-    heuristics_matrix = heuristics_matrix / (np.max(heuristics_matrix, axis=1, keepdims=True) + 1e-4)
+            # Select the node with the best score
+            if not scores:
+                break
+            
+            best_index = np.argmax(scores)
+            next_node = unvisited_nodes[best_index]
+
+            # Check if adding the next node exceeds capacity
+            if current_demand + demands[next_node] <= capacity:
+                current_route.append(next_node)
+                current_demand += demands[next_node]
+                visited.add(next_node)
+            else:
+                break  # Start a new route
+
+        routes.append(current_route)
+
+    # Populate heuristics matrix based on constructed routes
+    for route in routes:
+        for i in range(len(route) - 1):
+            heuristics_matrix[route[i], route[i + 1]] = distance_matrix[route[i], route[i + 1]]
+        heuristics_matrix[route[-1], 0] = distance_matrix[route[-1], 0]  # Return to depot
+
     return heuristics_matrix
+
 
 
 
