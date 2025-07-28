@@ -143,9 +143,39 @@ class ACO():
 import numpy as np
 from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import cdist
+from sklearn.cluster import KMeans
 
 def heuristics(distance_matrix: np.ndarray, coordinates: np.ndarray, demands: np.ndarray, capacity: int) -> np.ndarray:
-    return 1 / (distance_matrix + 1e-9)
+    n = distance_matrix.shape[0]
+    promising_matrix = np.zeros_like(distance_matrix)
+    
+    # Adaptive clustering to account for demands
+    kmeans = KMeans(n_clusters=min(5, n-1))  # Limit clusters
+    clusters = kmeans.fit_predict(coordinates[1:]) + 1  # Start from 1, depot is 0
+
+    # Historical performance decay (placeholder - requires historical data)
+    historical_scores = np.full((n, n), 1.0)  # Initialize scores as 1
+
+    for i in range(n):
+        for j in range(n):
+            if i != j and i != 0 and j != 0 and clusters[i-1] == clusters[j-1]:
+                demand_ratio = demands[j] / capacity
+                distance_factor = 1 / (distance_matrix[i, j] + 1e-6)  # Avoid division by zero
+                
+                # Multi-objective scoring incorporating distance, demand, and historical data
+                score = distance_factor * (1 + demand_ratio) * historical_scores[i, j]
+                
+                # Decay mechanism for historical scores for exploration
+                historical_scores[i, j] *= 0.99  # Decay rate of 1% per iteration
+
+                if score > 0.1:  # Sparsification threshold
+                    promising_matrix[i, j] = score
+
+    # Normalize the promising_matrix to scale scores (optional)
+    promising_matrix = promising_matrix / np.max(promising_matrix, where=(promising_matrix != 0), initial=1)
+
+    return promising_matrix
+
 
 
 from scipy.spatial import distance_matrix
