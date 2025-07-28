@@ -141,49 +141,50 @@ class ACO():
         return mask, knapsack
     
 ########################
-
-import numpy as np
-
-
 import numpy as np
 
 def heuristics(prize, weight):
-    n = len(prize)
+    n = prize.shape[0]
     m = weight.shape[1]
-
-    # Calculate adjusted scores with exponential penalties
-    scores = np.zeros(n)
-    penalties = np.zeros(n)
-    
-    for i in range(n):
-        max_weight = np.max(weight[i]) + 1e-10
-        
-        # Using an exponential penalty for exceeding weight constraints
-        penalties[i] = -np.exp(np.sum(weight[i]) - 1) if np.sum(weight[i]) > 1 else 0
-        scores[i] = prize[i] / (max_weight**2) if max_weight > 0 else 0  # Different scaling
-
-    combined_scores = scores + penalties
-    normalized_combined_scores = combined_scores / np.sum(combined_scores) if np.sum(combined_scores) != 0 else combined_scores
-
-    # Initialize DP table with simpler dimensions
-    dp = np.zeros((n + 1, m + 1))
-
-    for i in range(1, n + 1):
-        item_weight = weight[i - 1]
-        item_prize = prize[i - 1]
-
-        for j in range(m + 1):
-            if np.sum(item_weight) <= 1:  # Checking total weight
-                dp[i][j] = max(dp[i][j], dp[i - 1][j] + item_prize)
-
-            dp[i][j] = max(dp[i][j], dp[i - 1][j])  # Not including the item
-    
     heuristics_matrix = np.zeros(n)
-    for i in range(n):
-        item_weight = weight[i]
-        heuristics_matrix[i] = prize[i] * normalized_combined_scores[i] * np.sum(dp[n])
+    
+    cumulative_weight = np.zeros(m)  # Tracking cumulative weight contribution
+    total_weight = np.sum(weight, axis=0)  # Total weight across all items
+    normalized_weights = np.max(weight, axis=1) + 1e-9  # Normalized weight to avoid division by zero
+    
+    # Calculate normalized prize-to-weight ratios
+    prize_to_weight_ratios = prize / normalized_weights
+    avg_ratio = np.mean(prize_to_weight_ratios)
+    
+    # Rank the items based on their adjusted score
+    ranked_indices = np.argsort(-prize_to_weight_ratios)
 
+    for rank in range(n):
+        i = ranked_indices[rank]  # Get the item based on current rank
+        
+        # Calculate score considering the prize and normalized weight
+        score = prize[i] / normalized_weights[i]
+
+        # Incremental contribution factor based on current rank
+        incremental_contribution = (n - rank) / n  # Higher rank gets higher contribution
+
+        # Cumulative weight usage
+        weight_usage_ratio = cumulative_weight + weight[i]
+        weight_factor = np.power(0.5, np.sum(weight_usage_ratio))  # Diminishing returns based on usage
+        
+        # Calculate remaining capacity and adjust score with penalties
+        remaining_capacity = 1 - weight[i]
+        remaining_capacity_penalty = np.sum(np.maximum(0, -remaining_capacity))  # Simple penalty for exceeding capacity
+        
+        # Final score incorporating all factors
+        final_score = (score * weight_factor * incremental_contribution) - remaining_capacity_penalty
+        heuristics_matrix[i] = max(final_score, 0)  # Ensure non-negative score
+        
+        # Update cumulative weight
+        cumulative_weight += weight[i]
+    
     return heuristics_matrix
+
 
 
 
