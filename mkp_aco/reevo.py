@@ -150,18 +150,22 @@ import numpy as np
 import numpy as np
 
 def heuristics(prize: np.ndarray, weight: np.ndarray) -> np.ndarray:
-    # Normalize weight to ensure non-negative ratios
-    weight_sum = np.sum(weight, axis=1)
-    weight_normalized = weight_sum / np.max(weight_sum) if np.max(weight_sum) > 0 else 1
+    # Calculate the normalized prize-to-weight ratio
+    normalized_ratio = prize / (1 + np.sum(weight, axis=1))
     
-    # Calculate the heuristic value including the normalized weights
-    heuristics = prize / weight_normalized
+    # Calculate the relative weight burden for each item
+    weight_burden = np.max(weight, axis=1) / (1 + np.linalg.norm(weight, axis=1))
     
-    # Sparsification: setting unpromising elements to zero (threshold to filter out low promises)
-    threshold = np.percentile(heuristics, 30)  # top 30 percentile should remain
-    heuristics[heuristics < threshold] = 0
+    # Combine the two factors with a weighting factor to balance them
+    total_score = normalized_ratio * (1 - weight_burden)
     
-    return heuristics
+    # Set unpromising elements to zero (threshold: bottom 30%)
+    threshold = np.percentile(total_score, 30)
+    total_score[total_score < threshold] = 0
+    
+    # Return the heuristics
+    return total_score
+
 
 
 ####################################
