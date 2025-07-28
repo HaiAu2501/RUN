@@ -176,12 +176,11 @@ def heuristics(prize, distance, maxlen):
     
     for i in range(n):
         for j in range(n):
-            if i != j:
-                path_distance = distance[0][i] + distance[i][j] + distance[j][0]
-                if path_distance <= maxlen:
-                    heuristics_matrix[i][j] = (prize[j] ** 2) / path_distance
+            if i != j and distance[i][j] > 0 and distance[i][j] <= maxlen:
+                heuristics_matrix[i][j] = np.sqrt(prize[j]) / distance[i][j]  # Square root scoring
 
     return heuristics_matrix
+
 
 
 ###################################
