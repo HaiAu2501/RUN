@@ -169,51 +169,59 @@ N_ANTS = 20
 # FOR HEURISTIC IMPLEMENTATION
 
 import numpy as np
+from sklearn.cluster import KMeans
 
-def heuristics(prize: np.ndarray, distance: np.ndarray, maxlen: float) -> np.ndarray:
-    n = len(prize)
+def heuristics(prize: np.ndarray, distance: np.ndarray, max_len: float) -> np.ndarray:
+    n = prize.shape[0]
     heuristics = np.zeros((n, n))
 
-    # Connection strengths based on inverse distance
-    connection_strengths = np.zeros((n, n))
+    # KMeans clustering to capture spatial structure
+    kmeans = KMeans(n_clusters=min(n, 5), random_state=0)
+    clusters = kmeans.fit_predict(distance)
+
+    # Average distance calculation for connectivity
+    avg_distance = np.mean(distance, axis=1)
+
+    # Define dynamic thresholds for adaptive penalties
+    dynamic_threshold_high = np.percentile(prize[1:], 75)
+    dynamic_threshold_low = np.percentile(prize[1:], 40)
+
     for i in range(n):
         for j in range(n):
-            if i != j and distance[i, j] > 0:
-                connection_strengths[i, j] = 1 / distance[i, j]
+            if i != j and distance[i][j] > 0 and distance[i][j] <= max_len:
+                # Reward-to-cost ratio
+                reward_to_cost_ratio = prize[j] / distance[i][j]
 
-    # Compute potential scores considering distance-dependent scaling and dynamic exploration
-    for i in range(n):
-        for j in range(n):
-            if i != j and distance[i, j] <= maxlen:
-                potential_reward = prize[j]
-                travel_cost = distance[i, j]
+                # Connectivity factor based on distance to averages
+                connectivity_factor = (avg_distance[i] / distance[i][j]) if avg_distance[i] > 0 else 1
 
-                # Integrating exploration factor to increase variability
-                exploration_factor = 1 + np.random.rand() * 0.2  # Increased exploration factor
-                reward_ratio = (potential_reward / travel_cost) * exploration_factor
-                heuristics[i, j] = reward_ratio * connection_strengths[i, j]
+                # Favor edges within the same cluster 
+                cluster_adjustment = 1.2 if clusters[i] == clusters[j] else 0.8
 
-    # Calculate remaining distances from the depot
-    remaining_distance = maxlen - distance[0, :]
-    
-    # Adjust achievable prizes based on the remaining distances from the depot
-    achievable_prizes = np.where(remaining_distance > 0, prize * (remaining_distance / maxlen), 0)
+                # Dynamic penalty based on prize levels
+                if prize[j] >= dynamic_threshold_high:
+                    prize_penalty = 1.0
+                elif prize[j] < dynamic_threshold_low:
+                    prize_penalty = 0.5
+                else:
+                    prize_penalty = 0.8
 
-    # Combine heuristics with achievable prizes
-    heuristics *= achievable_prizes[np.newaxis, :]
+                # Combine heuristic value with an exploration factor
+                heuristic_value = (reward_to_cost_ratio * connectivity_factor * 
+                                   cluster_adjustment * prize_penalty)
 
-    # Adaptive thresholds based on node connectivity and visitation patterns
-    if heuristics[heuristics > 0].size > 0:
-        threshold = np.percentile(heuristics[heuristics > 0], 75)
-        heuristics[heuristics < threshold] = 0
+                heuristics[i][j] = max(0, heuristic_value)
 
-        # Connectivity refinement based on average heuristics
-        average_heuristic = np.mean(heuristics[heuristics > 0]) if heuristics[heuristics > 0].size > 0 else 0
-        for i in range(n):
-            if np.sum(heuristics[i, :]) < average_heuristic * 0.5:  # More stringent check
-                heuristics[i, :] = 0
+    # Introduce stochastic elements by adding noise for exploration
+    noise = np.random.normal(0, 0.1, size=(n, n))  # Appropriate noise level for exploration
+    heuristics += noise
+
+    # Sparsify by keeping edges in the top 30% of heuristic values
+    threshold = np.percentile(heuristics[heuristics > 0], 70)
+    heuristics[heuristics < threshold] = 0
 
     return heuristics
+
 
 
 ###################################
