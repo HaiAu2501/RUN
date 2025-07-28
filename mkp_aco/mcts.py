@@ -150,26 +150,41 @@ import numpy as np
 def heuristics(prize, weight):
     n = len(prize)
     m = weight.shape[1]
-    heuristics_matrix = np.zeros(n)
-    
-    cumulative_weight = np.zeros(m)
 
+    # Calculate adjusted scores with exponential penalties
+    scores = np.zeros(n)
+    penalties = np.zeros(n)
+    
     for i in range(n):
-        total_weight = np.sum(weight[i])
-        combined_weight = weight[i] + cumulative_weight
-        remaining_capacity = 1 - np.sum(cumulative_weight)
+        max_weight = np.max(weight[i]) + 1e-10
         
-        if np.all(combined_weight <= 1) and total_weight > 0:
-            max_weight = np.max(combined_weight)
-            scaling_factor = remaining_capacity / (1 + total_weight)
-            logistic_adjustment = 1 / (1 + np.exp(total_weight - m / 2))
-            linear_penalty = np.sum(np.maximum(0, combined_weight - 1))  # Linear penalty for exceeding capacity
-            quadratic_penalty = np.sum((combined_weight - 1) ** 2)  # Quadratic penalty
-            
-            prize_to_weight_ratio = prize[i] / (max_weight + 1e-10)
-            heuristics_matrix[i] = (prize_to_weight_ratio * scaling_factor * logistic_adjustment) - linear_penalty - quadratic_penalty
+        # Using an exponential penalty for exceeding weight constraints
+        penalties[i] = -np.exp(np.sum(weight[i]) - 1) if np.sum(weight[i]) > 1 else 0
+        scores[i] = prize[i] / (max_weight**2) if max_weight > 0 else 0  # Different scaling
+
+    combined_scores = scores + penalties
+    normalized_combined_scores = combined_scores / np.sum(combined_scores) if np.sum(combined_scores) != 0 else combined_scores
+
+    # Initialize DP table with simpler dimensions
+    dp = np.zeros((n + 1, m + 1))
+
+    for i in range(1, n + 1):
+        item_weight = weight[i - 1]
+        item_prize = prize[i - 1]
+
+        for j in range(m + 1):
+            if np.sum(item_weight) <= 1:  # Checking total weight
+                dp[i][j] = max(dp[i][j], dp[i - 1][j] + item_prize)
+
+            dp[i][j] = max(dp[i][j], dp[i - 1][j])  # Not including the item
+    
+    heuristics_matrix = np.zeros(n)
+    for i in range(n):
+        item_weight = weight[i]
+        heuristics_matrix[i] = prize[i] * normalized_combined_scores[i] * np.sum(dp[n])
 
     return heuristics_matrix
+
 
 
 
