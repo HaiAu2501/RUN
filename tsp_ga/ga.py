@@ -1,9 +1,9 @@
 import numpy as np
 import numba as nb
 from typing import List
-from F1 import initialize_population
-from F2 import crossover
-from F3 import mutation
+from F1_final_best import initialize_population
+from F2_final_best import crossover
+from F3_final_best import mutation
 from individual import Individual, calculate_tour_cost, encoding_to_tour
 
 usecache = True
