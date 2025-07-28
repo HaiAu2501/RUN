@@ -146,35 +146,66 @@ from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans
 
 def heuristics(distance_matrix: np.ndarray, coordinates: np.ndarray, demands: np.ndarray, capacity: int) -> np.ndarray:
+    import numpy as np
+
     n = distance_matrix.shape[0]
-    promising_matrix = np.zeros_like(distance_matrix)
+    edge_promising = np.zeros_like(distance_matrix)
+
+    # Calculate average and standard deviation of demands
+    average_demand = np.mean(demands[1:])  # Excluding depot
+    demand_stddev = np.std(demands[1:])
+
+    # Constants for balancing exploration and exploitation
+    exploration_factor = 1.2
+    exploitation_factor = 0.8
+
+    # Determine distance thresholds
+    distance_mean = np.mean(distance_matrix[distance_matrix > 0])
+    distance_stddev = np.std(distance_matrix[distance_matrix > 0])
+
+    # Cluster nodes by their demand into bins
+    demand_bins = np.floor(demands[1:] / (capacity / 3)).astype(int)
+    clusters = {i: [] for i in range(max(demand_bins) + 1)}
     
-    # Adaptive clustering to account for demands
-    kmeans = KMeans(n_clusters=min(5, n-1))  # Limit clusters
-    clusters = kmeans.fit_predict(coordinates[1:]) + 1  # Start from 1, depot is 0
+    for idx, demand in enumerate(demand_bins, 1):
+        clusters[demand].append(idx)
 
-    # Historical performance decay (placeholder - requires historical data)
-    historical_scores = np.full((n, n), 1.0)  # Initialize scores as 1
+    for cluster in clusters.values():
+        cluster_density = len(cluster) / (n - 1)  # Exclude depot from the count
 
-    for i in range(n):
-        for j in range(n):
-            if i != j and i != 0 and j != 0 and clusters[i-1] == clusters[j-1]:
-                demand_ratio = demands[j] / capacity
-                distance_factor = 1 / (distance_matrix[i, j] + 1e-6)  # Avoid division by zero
-                
-                # Multi-objective scoring incorporating distance, demand, and historical data
-                score = distance_factor * (1 + demand_ratio) * historical_scores[i, j]
-                
-                # Decay mechanism for historical scores for exploration
-                historical_scores[i, j] *= 0.99  # Decay rate of 1% per iteration
+        for i in cluster:
+            for j in cluster:
+                if i == j or distance_matrix[i, j] == 0:
+                    continue
 
-                if score > 0.1:  # Sparsification threshold
-                    promising_matrix[i, j] = score
+                distance = distance_matrix[i, j]
+                demand = demands[j]
 
-    # Normalize the promising_matrix to scale scores (optional)
-    promising_matrix = promising_matrix / np.max(promising_matrix, where=(promising_matrix != 0), initial=1)
+                # Promising score calculation based on demand and distance
+                if demand <= capacity:
+                    demand_factor = (capacity - demand) / (distance if distance > 0 else 1)
+                    variability_factor = 1 - (abs(demand - average_demand) / (capacity if capacity > 0 else 1))
 
-    return promising_matrix
+                    # Incorporate edge density and distance variability
+                    edge_score = demand_factor * variability_factor * cluster_density
+
+                    # Add proximity influence
+                    proximity_factor = np.exp(-distance / distance_mean)
+                    distance_variability = np.std(coordinates[i] - coordinates[j])
+                    edge_score *= proximity_factor * (1 / (1 + distance_variability))
+
+                    # Balance exploration and exploitation
+                    edge_score *= (exploitation_factor if edge_score > 0.1 else exploration_factor)
+
+                    # Store the promising score
+                    edge_promising[i, j] = edge_score
+
+                # Sparsify unpromising edges
+                if edge_promising[i, j] < 0.1:
+                    edge_promising[i, j] = 0.0
+
+    return edge_promising
+
 
 
 
