@@ -138,23 +138,27 @@ class ACO():
         return used_capacity, capacity_mask
     
     def check_done(self, visit_mask, actions):
-        return (visit_mask[:, 1:] == 0).all() and (actions == 0).all()    
+        return (visit_mask[:, 1:] == 0).all() and (actions == 0).all()  
 
 def heuristics(distance_matrix, coordinates, demands, capacity):
     n = distance_matrix.shape[0]
-    heuristics_matrix = np.zeros((n, n))
-    scaling_factor = 1.5  # Adjust this factor to reweigh demand influence
+    heuristics_matrix = np.zeros_like(distance_matrix)
 
     for i in range(n):
         for j in range(n):
-            if i != j:
-                if demands[j] <= capacity:
-                    # Calculate heuristic incorporating both demand and distance, using a logarithmic scale for demand
-                    heuristics_matrix[i, j] = (np.log(demands[j] + 1) / (distance_matrix[i, j] + 1e-6)) * (scaling_factor / (distance_matrix[i, j] ** 2))
-                else:
-                    heuristics_matrix[i, j] = 0
+            if i != j and i != 0 and j != 0:  # Exclude depot and self-loops
+                total_demand = demands[i] + demands[j]
+                
+                # Normalize by the distance
+                if distance_matrix[i, j] > 0:
+                    heuristics_matrix[i, j] = total_demand / distance_matrix[i, j]
+                    
+                    # Apply a penalty for low combined demands significantly below capacity
+                    if total_demand < capacity * 0.5:
+                        heuristics_matrix[i, j] *= (total_demand / (capacity * 0.5))
 
     return heuristics_matrix
+
 
 
 from scipy.spatial import distance_matrix
