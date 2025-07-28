@@ -167,45 +167,38 @@ N_ANTS = 20
 
 ###################################
 # FOR HEURISTIC IMPLEMENTATION
-
-
 import numpy as np
 
 def heuristics(prize, distance, maxlen):
-    n = prize.shape[0]
+    n = len(prize)
     heuristics_matrix = np.zeros((n, n))
 
     for i in range(n):
-        visited = np.zeros(n, dtype=bool)
-        remaining_distance = maxlen
-        reachable_nodes = [j for j in range(n) if i != j and distance[i][j] <= remaining_distance]
+        reachable_nodes = []
+        total_distance = 0
+        total_reward = np.sum(prize[np.nonzero(heuristics_matrix[i])])  # Reward accumulated so far
 
-        if reachable_nodes:
-            scores = []
-            initial_accessibility = (1 - (sum(distance[i][k] for k in reachable_nodes) / (len(reachable_nodes) * maxlen))) if reachable_nodes else 0
-            
-            for j in reachable_nodes:
-                if distance[i][j] > 0:
-                    prize_distance_ratio = prize[j] / distance[i][j]
-                    adjusted_accessibility = initial_accessibility * (remaining_distance / distance[i][j]) ** 0.5
-                    neighborhood_factor = sum(np.exp(-distance[j][k]) for k in reachable_nodes if k != j)
-                    combined_score = prize_distance_ratio * adjusted_accessibility * neighborhood_factor
-                    scores.append((combined_score, j))
+        for j in range(n):
+            if i != j and distance[i][j] <= maxlen:
+                num_traversed_nodes = np.sum(heuristics_matrix[i] > 0)
+                linear_penalty = num_traversed_nodes + 1  # Linear penalty for traversed nodes
+                adjusted_gain = (prize[j] ** 2) / (linear_penalty * distance[i][j] + 1e-10)
 
-            scores.sort(reverse=True, key=lambda x: x[0])
-            current_distance = 0
-            decay_factor = 0.9
+                normalized_reward_factor = (total_reward + prize[j]) / (num_traversed_nodes + 2) if num_traversed_nodes else prize[j]
+                effective_gain = adjusted_gain * (1.0 / (distance[i][j] + 1e-10)) * (normalized_reward_factor / (distance[i][j] + 1e-10))
 
-            for combined_score, j in scores:
-                travel_distance = distance[i][j]
-                if current_distance + travel_distance <= maxlen:
-                    heuristics_matrix[i][j] = combined_score * (decay_factor ** sum(visited)) * (prize[j] ** 1.3)
-                    visited[j] = True
-                    current_distance += travel_distance
-                else:
-                    break
+                reachable_nodes.append((j, effective_gain, distance[i][j]))
+
+        # Sort reachable nodes by effective gain in descending order
+        reachable_nodes.sort(key=lambda x: x[1], reverse=True)
+
+        for j, gain, dist in reachable_nodes:
+            if total_distance + dist <= maxlen:
+                heuristics_matrix[i][j] = gain
+                total_distance += dist
 
     return heuristics_matrix
+
 
 
 ###################################
