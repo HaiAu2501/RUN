@@ -168,36 +168,45 @@ N_ANTS = 20
 ###################################
 # FOR HEURISTIC IMPLEMENTATION
 import numpy as np
+import random
 
 def heuristics(prize, distance, maxlen):
     n = len(prize)
     heuristics_matrix = np.zeros((n, n))
+    
+    total_prize = np.sum(prize)
 
     for i in range(n):
-        reachable_nodes = []
-        total_distance = 0
-        total_reward = np.sum(prize[np.nonzero(heuristics_matrix[i])])  # Reward accumulated so far
-
         for j in range(n):
-            if i != j and distance[i][j] <= maxlen:
-                num_traversed_nodes = np.sum(heuristics_matrix[i] > 0)
-                linear_penalty = num_traversed_nodes + 1  # Linear penalty for traversed nodes
-                adjusted_gain = (prize[j] ** 2) / (linear_penalty * distance[i][j] + 1e-10)
+            if i != j and distance[i][j] > 0 and distance[i][j] <= maxlen:
+                normalized_prize = (prize[j] ** 4) / (total_prize ** 4) if total_prize > 0 else 0
+                decay_factor = np.log1p(maxlen / distance[i][j])
+                heuristics_matrix[i][j] = normalized_prize * decay_factor / (distance[i][j] ** 4)
 
-                normalized_reward_factor = (total_reward + prize[j]) / (num_traversed_nodes + 2) if num_traversed_nodes else prize[j]
-                effective_gain = adjusted_gain * (1.0 / (distance[i][j] + 1e-10)) * (normalized_reward_factor / (distance[i][j] + 1e-10))
+    initial_temperature = 100
+    cooling_rate = 0.9
+    temperature = initial_temperature
 
-                reachable_nodes.append((j, effective_gain, distance[i][j]))
+    while temperature > 1:
+        node1, node2 = random.sample(range(1, n), 2)
+        current_value = heuristics_matrix[node1][node2]
 
-        # Sort reachable nodes by effective gain in descending order
-        reachable_nodes.sort(key=lambda x: x[1], reverse=True)
+        for _ in range(25):  # Increased iterations for deeper exploration
+            random_target = random.choice(range(1, n))
+            if distance[node1][random_target] > 0 and distance[node1][random_target] <= maxlen:
+                normalized_prize = (prize[random_target] ** 4) / (total_prize ** 4) if total_prize > 0 else 0
+                decay_factor = np.log1p(maxlen / distance[node1][random_target])
+                new_value = normalized_prize * decay_factor / (distance[node1][random_target] ** 4)
 
-        for j, gain, dist in reachable_nodes:
-            if total_distance + dist <= maxlen:
-                heuristics_matrix[i][j] = gain
-                total_distance += dist
+                if new_value > current_value or random.random() < np.exp((new_value - current_value) / temperature):
+                    heuristics_matrix[node1][node2] = new_value
+                    current_value = new_value
+
+        temperature *= cooling_rate
+        cooling_rate = max(0.5, cooling_rate * 0.95)  # Aggressive dynamic cooling rate
 
     return heuristics_matrix
+
 
 
 
