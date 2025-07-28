@@ -1,4 +1,4 @@
-name: MOTIF PIPELINE FOR GA
+name: AAA-MOTIF PIPELINE FOR GA
 
 on:
   workflow_dispatch:
