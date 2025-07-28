@@ -143,70 +143,88 @@ class ACO():
 
 import numpy as np
 
+import random
+from sklearn.cluster import KMeans
+
+def calculate_route_distance(route, distance_matrix):
+    return sum(distance_matrix[route[i]][route[i + 1]] for i in range(len(route) - 1)) + distance_matrix[route[-1]][route[0]]
+
+def is_capacity_valid(route, demands, capacity):
+    total_demand = sum(demands[node] for node in route)
+    return total_demand <= capacity
+
+def two_opt(route, distance_matrix, demands, capacity):
+    best_route = route
+    best_distance = calculate_route_distance(best_route, distance_matrix)
+    improvement = True
+
+    while improvement:
+        improvement = False
+        for i in range(1, len(best_route) - 1):
+            for j in range(i + 1, len(best_route)):
+                if j - i == 1: continue  # Skip adjacent nodes
+                new_route = best_route[:i] + best_route[i:j][::-1] + best_route[j:]
+                if is_capacity_valid(new_route, demands, capacity):
+                    new_distance = calculate_route_distance(new_route, distance_matrix)
+                    if new_distance < best_distance:
+                        best_route = new_route
+                        best_distance = new_distance
+                        improvement = True
+
+    return best_route
+
 def heuristics(distance_matrix, coordinates, demands, capacity):
-    n = distance_matrix.shape[0]
-    heuristics_matrix = np.zeros_like(distance_matrix)
+    n = len(distance_matrix)
+    heuristics_matrix = np.zeros((n, n))
 
-    # Initialize parameters
-    visited = set()
-    routes = []
-    risk_factor_weight = 0.4  # Increased weight for risk factor
-    efficiency_weight = 0.45    # Weight for distance efficiency
-    exploration_weight = 0.15     # Reduced exploration weight
+    hierarchical_clusters = int(np.ceil(sum(demands) / capacity))
+    cluster_labels = KMeans(n_clusters=hierarchical_clusters, random_state=1).fit_predict(coordinates)
 
-    # Construct routes with a scoring approach
-    while len(visited) < n - 1:  # Exclude depot
-        current_route = [0]  # Start from depot
-        current_demand = 0
+    initial_routes = []
+    for cluster in range(hierarchical_clusters):
+        cluster_nodes = [i for i in range(n) if cluster_labels[i] == cluster]
+        if len(cluster_nodes) == 0:
+            continue
 
-        while True:
-            last_node = current_route[-1]
-            unvisited_nodes = [i for i in range(1, n) if i not in visited]
-            if not unvisited_nodes:
-                break
+        kmeans = KMeans(n_clusters=min(len(cluster_nodes), int(np.ceil(sum(demands[cluster_nodes]) / capacity))), random_state=1)
+        sub_labels = kmeans.fit_predict(coordinates[cluster_nodes])
 
-            # Calculate modified scores
-            scores = []
-            for node in unvisited_nodes:
-                demand_ratio = demands[node] / (capacity - current_demand) if (capacity - current_demand) > 0 else 0
-                distance_efficiency = 1 / distance_matrix[last_node][node] if distance_matrix[last_node][node] > 0 else 0
-                
-                # Risk assessment based on remaining capacity and node demand
-                risk_factor = (current_demand + demands[node] - capacity) ** 2 if (current_demand + demands[node] > capacity) else 0
-                
-                # Exploration score
-                exploration_score = (1 / (1 + len([r for r in routes if node in r]))) * exploration_weight
+        for sub_cluster in range(max(sub_labels) + 1):
+            sub_cluster_nodes = [cluster_nodes[i] for i in range(len(sub_labels)) if sub_labels[i] == sub_cluster]
+            sub_cluster_nodes.insert(0, 0)  # Include depot
 
-                score = (risk_factor_weight * risk_factor +
-                         efficiency_weight * distance_efficiency +
-                         (1 - risk_factor_weight - efficiency_weight) * demand_ratio -
-                         exploration_score)
-                scores.append(score)
-
-            # Select the node with the best score
-            if not scores:
-                break
+            route = [0]
+            total_demand = 0
             
-            best_index = np.argmax(scores)
-            next_node = unvisited_nodes[best_index]
+            while len(route) < len(sub_cluster_nodes):
+                next_node = None
+                min_distance = float('inf')
 
-            # Check if adding the next node exceeds capacity
-            if current_demand + demands[next_node] <= capacity:
-                current_route.append(next_node)
-                current_demand += demands[next_node]
-                visited.add(next_node)
-            else:
-                break  # Start a new route
+                for idx, neighbor in enumerate(sub_cluster_nodes):
+                    if neighbor not in route and total_demand + demands[neighbor] <= capacity:
+                        if distance_matrix[route[-1]][neighbor] < min_distance:
+                            min_distance = distance_matrix[route[-1]][neighbor]
+                            next_node = neighbor
 
-        routes.append(current_route)
+                if next_node is not None:
+                    route.append(next_node)
+                    total_demand += demands[next_node]
+                else:
+                    break
+            
+            route.append(0)  # Return to depot
+            initial_routes.append(route)
 
-    # Populate heuristics matrix based on constructed routes
-    for route in routes:
-        for i in range(len(route) - 1):
-            heuristics_matrix[route[i], route[i + 1]] = distance_matrix[route[i], route[i + 1]]
-        heuristics_matrix[route[-1], 0] = distance_matrix[route[-1], 0]  # Return to depot
+    optimized_routes = []
+    for route in initial_routes:
+        optimized_route = two_opt(route, distance_matrix, demands, capacity)
+        optimized_routes.append(optimized_route)
+        
+        for i in range(len(optimized_route) - 1):
+            heuristics_matrix[optimized_route[i]][optimized_route[i + 1]] = distance_matrix[optimized_route[i]][optimized_route[i + 1]]
 
     return heuristics_matrix
+
 
 
 
