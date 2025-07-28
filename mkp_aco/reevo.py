@@ -146,8 +146,23 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import MinMaxScaler
 
+import numpy as np
+import numpy as np
+
 def heuristics(prize: np.ndarray, weight: np.ndarray) -> np.ndarray:
-    return prize / np.sum(weight, axis=1)
+    # Normalize weight to ensure non-negative ratios
+    weight_sum = np.sum(weight, axis=1)
+    weight_normalized = weight_sum / np.max(weight_sum) if np.max(weight_sum) > 0 else 1
+    
+    # Calculate the heuristic value including the normalized weights
+    heuristics = prize / weight_normalized
+    
+    # Sparsification: setting unpromising elements to zero (threshold to filter out low promises)
+    threshold = np.percentile(heuristics, 30)  # top 30 percentile should remain
+    heuristics[heuristics < threshold] = 0
+    
+    return heuristics
+
 
 ####################################
 
