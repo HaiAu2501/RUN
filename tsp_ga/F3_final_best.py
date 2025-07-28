@@ -1,31 +1,32 @@
 import numpy as np
 
-def mutation(encoding: np.ndarray, distances: np.ndarray) -> np.ndarray:
+def insert_position(city: int, incomplete_tour: list[int], distances: np.ndarray) -> int:
     """
-    Perform simple random mutation on encoding.
-    
-    Simple Gaussian noise mutation: add small random values to encoding.
+    Find best position to insert city in incomplete_tour.
     
     Parameters
     ----------
-    encoding : np.ndarray, shape (n_cities,)
-        Encoding to mutate (real values).
-    distances : np.ndarray, shape (n_cities, n_cities)
-        Distance matrix between cities, can be used for more complex mutation logic.
+    city : int
+        City ID to insert
+    incomplete_tour : list[int]
+        Current incomplete tour
+    distances : np.ndarray, shape (n, n)
+        Distance matrix between cities
         
     Returns
     -------
-    np.ndarray, shape (n_cities,)
-        Mutated encoding.
+    int
+        Best position index to insert city (0 to len(incomplete_tour))
     """
-    mutated = encoding.copy()
+    # Find nearest city in incomplete tour
+    nearest_city_idx = 0
+    min_dist = float('inf')
     
-    # Add Gaussian noise to each gene
-    mutation_strength = 0.1  # Standard deviation of noise
+    for i, tour_city in enumerate(incomplete_tour):
+        dist = distances[city, tour_city]
+        if dist < min_dist:
+            min_dist = dist
+            nearest_city_idx = i
     
-    for i in range(len(mutated)):
-        # Add Gaussian noise
-        noise = np.random.normal(0.0, mutation_strength)
-        mutated[i] += noise
-    
-    return mutated
+    # Insert next to nearest city (after it)
+    return nearest_city_idx + 1

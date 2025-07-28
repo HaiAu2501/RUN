@@ -1,37 +1,30 @@
 import numpy as np
 
-def crossover(parent1: np.ndarray, parent2: np.ndarray, distances: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def city_badness(tour_idx: int, tour: list[int], distances: np.ndarray) -> float:
     """
-    Perform uniform crossover between two parent encodings.
-    
-    Simple uniform crossover: each gene comes from parent1 or parent2 with 50% probability.
+    Calculate badness score of city at tour_idx in the tour.
+    Higher score = worse city (should be removed first).
     
     Parameters
     ----------
-    parent1 : np.ndarray, shape (n_cities,)
-        First parent encoding (real values).
-    parent2 : np.ndarray, shape (n_cities,)
-        Second parent encoding (real values).
-    distances : np.ndarray, shape (n_cities, n_cities)
-        Distance matrix between cities, can be used for more complex crossover logic.
-
+    tour_idx : int
+        Index in tour (not city ID)
+    tour : list[int]
+        Current tour as list of city IDs
+    distances : np.ndarray, shape (n, n)
+        Distance matrix between cities
+        
     Returns
     -------
-    tuple[np.ndarray, np.ndarray]
-        offspring1, offspring2 : Two offspring encodings.
+    float
+        Badness score. Higher = worse city.
     """
-    n_cities = len(parent1)
+    n = len(tour)
     
-    offspring1 = np.zeros(n_cities)
-    offspring2 = np.zeros(n_cities)
+    city = tour[tour_idx]
+    prev_city = tour[(tour_idx - 1) % n]
+    next_city = tour[(tour_idx + 1) % n]
     
-    # Uniform crossover: each gene comes from random parent
-    for i in range(n_cities):
-        if np.random.random() < 0.5:
-            offspring1[i] = parent1[i]
-            offspring2[i] = parent2[i]
-        else:
-            offspring1[i] = parent2[i]
-            offspring2[i] = parent1[i]
-    
-    return offspring1, offspring2
+    # Badness = sum of distances to neighbors
+    # Cities with long connections are "bad"
+    return distances[prev_city, city] + distances[city, next_city]

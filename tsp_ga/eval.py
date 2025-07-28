@@ -90,7 +90,7 @@ def run(size):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(current_dir, 'datasets', f'test_TSP{size}.npy')
     # Number of runs per instance
-    NUM_RUNS = 10
+    NUM_RUNS = 1
     POPULATION_SIZE = 50
     GENERATIONS = 1000
         
