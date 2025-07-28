@@ -145,25 +145,17 @@ class ACO():
 import numpy as np
 
 def heuristics(prize, weight):
-    n = prize.shape[0]
-    m = weight.shape[1]
-    heuristics_matrix = np.zeros((n,))
+    n = len(prize)
+    heuristics_matrix = np.zeros(n)
     
-    # Calculate the maximum weight across all dimensions for each item
     max_weight = np.max(weight, axis=1)
-
-    # Compute a modified score combining prize and maximum weight
-    for i in range(n):
-        heuristics_matrix[i] = prize[i] / (max_weight[i] + 1e-10)  # Adding a small value to avoid division by zero
-
-    # Normalize the heuristics matrix
-    heuristics_matrix = heuristics_matrix / np.sum(heuristics_matrix)
     
-    # Apply stochastic sampling to introduce randomness
-    stochastic_factor = np.random.rand(n)
-    heuristics_matrix *= stochastic_factor
-
+    for i in range(n):
+        inverse_weight = 1 / max_weight[i] if max_weight[i] > 0 else 0
+        heuristics_matrix[i] = prize[i] * inverse_weight
+        
     return heuristics_matrix
+
 
 
 ####################################
