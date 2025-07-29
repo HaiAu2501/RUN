@@ -10,7 +10,7 @@ OPTIMAL = {
     200: 10.67370363366072
 }
 
-def eval_instance(coords, population_size, generations, num_runs=3):
+def eval_instance(coords, seed=None):
     """
     Evaluate a single TSP instance using GA with multiple runs.
     
@@ -22,6 +22,8 @@ def eval_instance(coords, population_size, generations, num_runs=3):
         GA population size.
     generations : int
         Number of GA generations.
+    seed : int, optional
+        Random seed for reproducibility.
     num_runs : int
         Number of independent runs to average.
         
@@ -32,21 +34,17 @@ def eval_instance(coords, population_size, generations, num_runs=3):
     """
     # Create distance matrix
     distances = distance_matrix(coords, coords)
-    
-    # Run GA multiple times and collect results
-    results = []
-    for run in range(num_runs):
-        best_cost = run_tsp_ga(
-            distances=distances,
-            population_size=population_size,
-            generations=generations
-        )
-        results.append(best_cost)
+
+    best_cost = run_tsp_dr(
+        distances=distances,
+        max_workers=100,
+        seed=seed,
+    )
     
     # Return average cost
-    return np.mean(results)
+    return best_cost
 
-def process_file(path, population_size, generations, num_runs=30):
+def process_file(path):
     """
     Process a dataset file and solve all instances with multiple runs.
     
@@ -70,10 +68,14 @@ def process_file(path, population_size, generations, num_runs=30):
     data = np.load(path)
     n_instances = data.shape[0]
     
+    # Generate seeds for reproducibility
+    seeds = np.arange(n_instances)
+    
     results = []
     for i in range(n_instances):
         coordinates = data[i]
-        avg_cost = eval_instance(coordinates, population_size, generations, num_runs)
+        # Use instance index as base seed for reproducibility
+        avg_cost = eval_instance(coordinates, seed=int(seeds[i]))
         results.append(avg_cost)
     
     return np.array(results)
@@ -89,14 +91,10 @@ def run(size):
     """
     current_dir = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(current_dir, 'datasets', f'test_TSP{size}.npy')
-    # Number of runs per instance
-    NUM_RUNS = 1
-    POPULATION_SIZE = 50
-    GENERATIONS = 1000
         
     # Process dataset with multiple runs
-    costs = process_file(path, POPULATION_SIZE, GENERATIONS, NUM_RUNS)
-    print(f"Average cost for TSP{size} over {NUM_RUNS} runs: {costs.mean():.6f}")
+    costs = process_file(path)
+    print(f"Average cost for TSP{size}: {costs.mean():.6f}")
     opt_gap = (costs.mean() - OPTIMAL[size]) / OPTIMAL[size] * 100
     print(f"Optimality gap for TSP{size}: {opt_gap:.6f}%")
 
