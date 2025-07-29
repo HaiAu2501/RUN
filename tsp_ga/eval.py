@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 from scipy.spatial import distance_matrix
-from ga import run_tsp_ga
+from ga import run_tsp_dr
 
 OPTIMAL = {
     50: 5.698495085905844,
