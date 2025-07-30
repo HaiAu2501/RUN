@@ -1,0 +1,127 @@
+name: 2-BPP-DR Workflow - 1f
+
+on:
+  workflow_dispatch:
+    inputs:
+      solver:
+        description: "Solver"
+        required: true
+        default: "bpp_dr_f1_f2_f3"
+        type: choice
+        options:
+          - bpp_dr_f1
+          - bpp_dr_f2
+          - bpp_dr_f3
+          - bpp_dr_f1_f2
+          - bpp_dr_f2_f3
+          - bpp_dr_f1_f2_f3
+      outer_iterations:
+        description: "Outer Iterations"
+        required: true
+        default: "20"
+      inner_iterations:
+        description: "Inner Iterations"
+        required: true
+        default: "10"
+      final_iterations:
+        description: "Final Iterations"
+        required: true
+        default: "0"
+      model:
+        description: "LLM"
+        required: true
+        default: "gpt-4o-mini"
+        type: choice
+        options:
+          - gpt-4o-mini
+          - gpt-4o
+          - gpt-4.1
+
+permissions:
+  contents: read
+
+jobs:
+  optimize:
+    name: MCTS Optimization
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: CHECKOUT MOTIF REPO
+        uses: actions/checkout@v4
+        with:
+          repository: HaiAu2501/MOTIF
+          token: ${{ secrets.CHECKOUT_TOKEN }}
+          ref: turn-based
+
+      - name: SETUP PYTHON
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: INSTALL DEPENDENCIES
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: RUN OPTIMIZATION
+        run: |
+          echo "Running optimization with solver=${{ github.event.inputs.solver }}..."
+          python main.py \
+            solver=${{ github.event.inputs.solver }} \
+            mcts.outer_iterations=${{ github.event.inputs.outer_iterations }} \
+            mcts.inner_iterations=${{ github.event.inputs.inner_iterations }} \
+            mcts.final_iterations=${{ github.event.inputs.final_iterations }} \
+            llm.model=${{ github.event.inputs.model }}
+
+      - name: UPLOAD OPTIMIZATION RESULTS
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimization-results
+          path: results/
+          if-no-files-found: warn
+          retention-days: 90
+
+  evaluate:
+    name: Evaluate ${{ github.event.inputs.solver }} - ${{ matrix.size }}
+    needs: optimize
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        size: ["100", "200", "300"]
+
+    steps:
+      - name: CHECKOUT RUN REPO
+        uses: actions/checkout@v4
+
+      - name: SETUP PYTHON
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: INSTALL DEPENDENCIES
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: DOWNLOAD OPTIMIZATION RESULTS
+        uses: actions/download-artifact@v4
+        with:
+          name: optimization-results
+          path: results/
+
+      - name: COPY OPTIMIAZED FUNCTIONS
+        run: |
+          if [ -d "results" ]; then
+            echo "Copying optimized functions to bpp_dr directory..."
+            cp results/*_final_best.py bpp_dr/
+          fi
+
+      - name: RUN EVALUATION bpp_dr - ${{ matrix.size }}
+        run: |
+          echo "Running evaluation for bpp_dr - ${{ matrix.size }}..."
+          cd bpp_dr
+          python eval.py ${{ matrix.size }}
