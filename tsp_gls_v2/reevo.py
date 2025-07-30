@@ -31,53 +31,7 @@ from scipy.stats import skew
 import numpy as np
 
 def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
-    n = distance_matrix.shape[0]
-    heuristics_matrix = np.zeros((n, n))
-
-    # Calculate statistical measures of distances for each node
-    avg_distance = np.mean(distance_matrix, axis=1)
-    median_distance = np.median(distance_matrix, axis=1)
-    skewness_distance = skew(distance_matrix, axis=1, nan_policy='omit')
-
-    # Count edges for nodes (connectivity)
-    edge_count = np.sum(distance_matrix != np.inf, axis=1)
-
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                edge_weight = distance_matrix[i, j]
-                degree_i = edge_count[i]
-                degree_j = edge_count[j]
-
-                # Base heuristic value based on edge weight and connectivity
-                heuristics_matrix[i, j] = edge_weight * (degree_i + degree_j)
-
-                # Adaptive penalties for edges based on average and median distances
-                if edge_weight > avg_distance[i]:
-                    heuristics_matrix[i, j] *= 1.5
-                
-                if edge_weight > median_distance[i]:
-                    heuristics_matrix[i, j] += (edge_weight - median_distance[i]) ** 2
-
-                # Penalty for low connectivity edges and skewness
-                if degree_i + degree_j > 0:
-                    heuristics_matrix[i, j] += (1 / (degree_i + degree_j)) * 10
-                
-                # Incorporate skewness-based penalties dynamically
-                heuristics_matrix[i, j] += np.abs(skewness_distance[i]) * 2  
-
-                # Favor edges that contribute to a well-connected structure
-                if degree_i > 1 and degree_j > 1:
-                    heuristics_matrix[i, j] *= 0.9  
-
-                # Additional clustering insight: penalize edges that promote longer routes
-                heuristics_matrix[i, j] += (np.std(distance_matrix[i]) + np.std(distance_matrix[j])) * 0.5
-
-    # Normalize to ensure heuristics values are on a consistent scale
-    max_value = np.max(heuristics_matrix) if np.max(heuristics_matrix) != 0 else 1
-    heuristics_matrix /= max_value
-
-    return heuristics_matrix
+    return distance_matrix
 
 
 
