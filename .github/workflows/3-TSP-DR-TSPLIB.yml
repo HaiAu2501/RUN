@@ -1,0 +1,51 @@
+name: 3-TSP-DR-TSPLIB
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  run-tsp-gls:
+    name: 3-TSP-DR-TSPLIB
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scripts:
+          [
+            "tsp225",
+            "rat99",
+            "bier127",
+            "lin318",
+            "eil51",
+            "d493",
+            "kroB100",
+            "kroC100",
+            "ch130",
+            "pr299",
+            "fl417",
+            "kroA150",
+            "pr264",
+            "pr226",
+            "pr439",
+          ]
+
+    steps:
+      - name: CHECKOUT
+        uses: actions/checkout@v4
+
+      - name: SETUP PYTHON
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: INSTALL DEPENDENCIES
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: RUN TSP${{ matrix.scripts }}
+        run: |
+          echo "Running ${{ matrix.scripts }}..."
+          python dr_tsplib/eval.py ${{ matrix.scripts }}
