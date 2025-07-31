@@ -42,7 +42,7 @@ def solve(name):
                 dist_mat[i, j] = problem.get_weight(i + 1, j + 1)
                 dist_mat[j, i] = dist_mat[i, j]
 
-    total_distance = run_tsp_dr(dist_mat, use_2opt=True)
+    total_distance = run_tsp_dr(dist_mat, use_2opt=False)
 
     opt_gap = (total_distance - OPTIMAL[name]) / OPTIMAL[name] * 100
     print(f"{name}: opt gap = {opt_gap:.2f}%")
