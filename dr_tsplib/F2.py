@@ -7,34 +7,31 @@ import numpy as np
 def city_badness(tour_idx: int, tour: list[int], distances: np.ndarray) -> float:
     n = len(tour)
     if n < 3:
-        return float('inf')  # Handle edge case for insufficient cities
+        return float('inf')  # Cannot remove cities if less than 3 in tour
 
-    city = tour[tour_idx]  # The evaluated city
-    prev_city = tour[(tour_idx - 1) % n]  # Previous city
-    next_city = tour[(tour_idx + 1) % n]  # Next city
+    city = tour[tour_idx]
+    prev_city = tour[(tour_idx - 1) % n]
+    next_city = tour[(tour_idx + 1) % n]
 
-    # Calculate local badness as the distance to direct neighbors
-    local_badness = distances[prev_city, city] + distances[city, next_city]
+    # Compute savings from removing the city
+    connection_savings = (distances[prev_city, city] + distances[city, next_city] - distances[prev_city, next_city])
 
-    # Compute total distance to all cities
-    total_distance = np.sum(distances[city])
-    avg_distance = total_distance / (n - 1) if n > 1 else 0
+    # Determine connectivity and distance metrics
+    connectivity_degree = np.count_nonzero(distances[city])
+    connected_distances = distances[city][distances[city] > 0]
+    average_distance = np.mean(connected_distances) if connected_distances.size > 0 else 1  # Avoid division by zero
+    distance_variance = np.var(connected_distances) if connected_distances.size > 0 else 0
 
-    # Dynamic detour penalty based on neighboring connections
-    detour_penalty = 0.0
-    if local_badness > avg_distance:
-        detour_penalty = 0.9 * (local_badness - avg_distance)
+    # Introduce a weighted score based on local visits
+    local_visit_count = tour.count(city)
+    local_density = local_visit_count / n
 
-    # Connectivity penalty: focus on isolating cities more aggressively
-    connectivity_penalty = 0.0
-    if avg_distance > 0:
-        connectivity_ratio = total_distance / (n * avg_distance)
-        if connectivity_ratio > 1.2:  # Only increase for significant disconnections
-            connectivity_penalty = 2.0 * connectivity_ratio
+    # Adjusting penalties
+    penalty_for_disconnection = (2.0 / (connectivity_degree + 1)) if connectivity_degree < 2 else 0
+    frequent_visit_penalty = (np.log1p(local_visit_count) + (local_density * 3))  # Log scale for adapting to frequency
 
-    # Adjust average penalty based on tour density 
-    avg_penalty = 1.5 * (avg_distance / n)
+    # Final badness score calculation
+    badness_score = (connection_savings + distance_variance)
+    badness_score *= (1.0 + penalty_for_disconnection + frequent_visit_penalty)  # Combine various penalties
 
-    # Final badness score: combine metrics
-    score = local_badness + avg_penalty + detour_penalty + connectivity_penalty
-    return score
+    return badness_score
