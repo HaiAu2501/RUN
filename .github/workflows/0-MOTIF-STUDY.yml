@@ -63,7 +63,7 @@ jobs:
         with:
           repository: HaiAu2501/MOTIF
           token: ${{ secrets.CHECKOUT_TOKEN }}
-          ref: abalation-studies
+          ref: ablation-studies
 
       - name: SETUP PYTHON
         uses: actions/setup-python@v5
