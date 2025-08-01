@@ -1,34 +1,70 @@
 import numpy as np
 from sklearn.cluster import KMeans
 
+import numpy as np
+
 def heuristics(distance_matrix):
-    num_nodes = distance_matrix.shape[0]
-    heuristics_matrix = np.zeros((num_nodes, num_nodes))
+    n = distance_matrix.shape[0]
+    pheromone_matrix = np.ones((n, n))  # Initialize pheromone levels
+    heuristics_matrix = np.zeros((n, n))  # Initialize heuristics matrix
+    num_ants = 20  # Increased number of ants for better exploration
+    iterations = 120  # Moderate number of iterations
+    local_search_iterations = 5  # Local search improvements
+    decay_factor = 0.9  # Pheromone decay factor
 
-    # Step 1: Clustering nodes into groups
-    num_clusters = max(2, num_nodes // 2)  # At least two clusters
-    kmeans = KMeans(n_clusters=num_clusters)
-    node_indices = np.arange(num_nodes).reshape(-1, 1)
-    kmeans.fit(node_indices)
-    labels = kmeans.labels_
+    for _ in range(iterations):
+        for ant in range(num_ants):
+            tour = []
+            visited = set()
+            current_city = np.random.randint(n)
+            tour.append(current_city)
+            visited.add(current_city)
 
-    # Step 2: Calculate average distances and cubic inverse distances
-    for i in range(num_nodes):
-        valid_distances = distance_matrix[i][distance_matrix[i] > 0]
-        avg_distance = np.mean(valid_distances) if len(valid_distances) > 0 else 0
-        inverse_cubic_distance = 1 / (distance_matrix[i] ** 3 + 1e-6)  # Avoid division by zero
-        
-        for j in range(num_nodes):
+            while len(visited) < n:  # Visit all cities
+                probabilities = np.zeros(n)
+                for next_city in range(n):
+                    if next_city not in visited:
+                        probabilities[next_city] = (pheromone_matrix[current_city, next_city] ** 1.5) / (distance_matrix[current_city, next_city] + 1e-6)
+                
+                if np.sum(probabilities) > 0:  # Avoid division by zero
+                    probabilities /= np.sum(probabilities)  # Normalize probabilities
+                
+                next_city = np.random.choice(range(n), p=probabilities)
+                tour.append(next_city)
+                visited.add(next_city)
+                current_city = next_city
+            
+            tour.append(tour[0])  # Complete the tour
+            total_distance = sum(distance_matrix[tour[i], tour[i + 1]] for i in range(n))
+            
+            # Enhanced local search improvement using 2-opt
+            for _ in range(local_search_iterations):
+                improved = False
+                for i in range(1, n - 1):
+                    for j in range(i + 1, n):
+                        if j != n - 1 and (distance_matrix[tour[i-1], tour[i]] + distance_matrix[tour[j], tour[(j + 1) % n]] 
+                                           > distance_matrix[tour[i-1], tour[j]] + distance_matrix[tour[i], tour[(j + 1) % n]]):
+                                # Reverse the segment
+                                tour[i:j + 1] = tour[i:j + 1][::-1]  
+                                improved = True
+                if not improved:
+                    break
+            
+            # Update pheromone levels
+            for i in range(n):
+                pheromone_matrix[tour[i], tour[i + 1]] += (1.0 / total_distance) * (1 + (0.1 * np.random.rand()))  
+
+        # Global pheromone evaporation
+        pheromone_matrix *= decay_factor  # Global decay
+
+    # Compute heuristics matrix based on pheromone levels
+    for i in range(n):
+        for j in range(n):
             if i != j:
-                cluster_weight = (labels[i] == labels[j]) * 0.6 + 0.4  # Weight for intra-cluster connections
-                distance_score = inverse_cubic_distance[j] * (avg_distance - distance_matrix[i][j]) / (avg_distance + 1e-6) if avg_distance > 0 else 0
-                heuristics_matrix[i][j] = max(distance_score * cluster_weight, 0)
-
-    # Step 3: Adaptive normalization
-    row_sum = heuristics_matrix.sum(axis=1, keepdims=True)
-    heuristics_matrix = heuristics_matrix / (row_sum + 1e-6)  # Normalize with small constant to avoid zero division
+                heuristics_matrix[i, j] = pheromone_matrix[i, j] / (distance_matrix[i, j] + 1e-6)
 
     return heuristics_matrix
+
 
 import torch
 from torch.distributions import Categorical
