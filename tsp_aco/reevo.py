@@ -1,52 +1,37 @@
 import numpy as np
 from sklearn.cluster import KMeans
 
+import numpy as np
+import numpy as np
+
 def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
-    num_nodes = distance_matrix.shape[0]
-    heuristics_matrix = np.zeros_like(distance_matrix)
+    num_cities = distance_matrix.shape[0]
 
-    # Calculate total distances for each node
-    total_distances = np.sum(distance_matrix, axis=1)
+    # Create a promising matrix based on the inverse of distances
+    inv_distance = 1 / (distance_matrix + np.finfo(float).eps)  # Avoid division by zero
+    promising_matrix = inv_distance * (num_cities - 1)
 
-    # K-Means clustering to identify clusters
-    num_clusters = min(num_nodes // 2, 10)
-    kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(distance_matrix)
-    cluster_labels = kmeans.labels_
+    # Use local search feedback through a dynamic threshold
+    average_distance = np.mean(distance_matrix, axis=1)
+    adjustments = (average_distance[:, None] + average_distance[None, :]) / 2
 
-    # Dynamic edge weighting inversely related to distances with adaptive scoring
-    edge_weight = 1 / (distance_matrix + 1e-9)
+    # Exploring diverse connectivity measures, using a softmax for weighting
+    exp_distances = np.exp(-distance_matrix / (np.max(distance_matrix) + np.finfo(float).eps))
+    connectivity_matrix = exp_distances / np.sum(exp_distances, axis=1, keepdims=True)
 
-    # Compute heuristic scores based on connectivity and clustering
-    for i in range(num_nodes):
-        for j in range(num_nodes):
-            if i != j:
-                connectivity_score = (total_distances[i] + total_distances[j]) / distance_matrix[i, j]
-                cluster_similarity = 1 if cluster_labels[i] == cluster_labels[j] else 0
-                adjusted_edge_weight = edge_weight[i, j]
+    # Combine distance and connectivity information
+    promising_matrix *= (1 / (adjustments + np.finfo(float).eps)) * connectivity_matrix
 
-                # Combine heuristic score with a multi-objective approach
-                heuristics_matrix[i, j] = (
-                    connectivity_score * (1 + cluster_similarity) * adjusted_edge_weight
-                )
+    # Dynamically adjusting the threshold based on variance
+    feedback_threshold = np.mean(promising_matrix) + np.std(promising_matrix)
+    promising_matrix[promising_matrix < feedback_threshold] = 0
 
-    # Normalize the heuristics matrix
-    heuristics_matrix[heuristics_matrix < 0] = 0
-    max_heuristic = np.max(heuristics_matrix)
-    min_heuristic = np.min(heuristics_matrix[heuristics_matrix > 0]) if np.any(heuristics_matrix > 0) else 1
-    normalized_heuristics = (
-        (heuristics_matrix - min_heuristic) / (max_heuristic - min_heuristic)
-        if max_heuristic > min_heuristic else heuristics_matrix
-    )
+    # Variance normalization to assess edge relevance dynamically
+    variance_adjustment = np.var(promising_matrix) + np.finfo(float).eps
+    promising_matrix /= variance_adjustment
 
-    # Adaptive thresholding for sparsification based on node density
-    density_threshold = 0.75 if num_nodes < 100 else 0.85
-    threshold = np.quantile(normalized_heuristics[normalized_heuristics > 0], density_threshold)
-    promising_scores = np.where(normalized_heuristics >= threshold, normalized_heuristics, 0)
+    return promising_matrix
 
-    # Further incorporating hybrid strategies (not executed but a placeholder for future implementation)
-    # Add genetic algorithm elements or local search refinements here if applicable.
-
-    return promising_scores
 
 import torch
 from torch.distributions import Categorical
