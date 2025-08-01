@@ -1,18 +1,20 @@
 import numpy as np
 
+
 def heuristics(distance_matrix):
-    n = distance_matrix.shape[0]
-    heuristics_matrix = np.zeros_like(distance_matrix)
+    # Invert the distances to give higher priority to shorter distances
+    with np.errstate(divide='ignore', invalid='ignore'):
+        inverse_distances = 1 / distance_matrix
+        inverse_distances[np.isinf(inverse_distances)] = 0  # Handle infinite distances
 
-    median_distance = np.median(distance_matrix[distance_matrix != 0])  # Calculate median distance excluding zero
+    # Apply a cubic transformation to emphasize short distances
+    powered_distances = np.power(inverse_distances, 3)
 
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                # A modified heuristic: square of inverse distance combined with the median distance
-                heuristics_matrix[i, j] = (1 / (distance_matrix[i, j] + 1e-6)**2) * (median_distance / distance_matrix[i, j])
+    # Normalize the heuristics matrix to sum to 1 for each row
+    heuristics_matrix = powered_distances / powered_distances.sum(axis=1, keepdims=True)
 
     return heuristics_matrix
+
 
 
 import torch
