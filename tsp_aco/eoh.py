@@ -1,16 +1,19 @@
 import numpy as np
 
 def heuristics(distance_matrix):
-    num_nodes = distance_matrix.shape[0]
-    heuristics_matrix = np.zeros((num_nodes, num_nodes))
-    
-    for i in range(num_nodes):
-        for j in range(num_nodes):
-            if i != j and distance_matrix[i, j] > 0:
-                # Heuristic: inverse distance cubed, with a penalty for longer distances
-                heuristics_matrix[i, j] = 1 / (distance_matrix[i, j] ** 3 + 1e-10) * (1 / (np.mean(distance_matrix[i]) + 1e-10))
+    n = distance_matrix.shape[0]
+    heuristics_matrix = np.zeros_like(distance_matrix)
+
+    median_distance = np.median(distance_matrix[distance_matrix != 0])  # Calculate median distance excluding zero
+
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                # A modified heuristic: square of inverse distance combined with the median distance
+                heuristics_matrix[i, j] = (1 / (distance_matrix[i, j] + 1e-6)**2) * (median_distance / distance_matrix[i, j])
 
     return heuristics_matrix
+
 
 import torch
 from torch.distributions import Categorical
