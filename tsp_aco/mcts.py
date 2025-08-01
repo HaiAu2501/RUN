@@ -3,67 +3,88 @@ from sklearn.cluster import KMeans
 
 import numpy as np
 
+import numpy as np
+
 def heuristics(distance_matrix):
-    n = distance_matrix.shape[0]
-    pheromone_matrix = np.ones((n, n))  # Initialize pheromone levels
-    heuristics_matrix = np.zeros((n, n))  # Initialize heuristics matrix
-    num_ants = 20  # Increased number of ants for better exploration
-    iterations = 120  # Moderate number of iterations
-    local_search_iterations = 5  # Local search improvements
-    decay_factor = 0.9  # Pheromone decay factor
+    num_nodes = distance_matrix.shape[0]
+    heuristics_matrix = np.zeros_like(distance_matrix)
+    pheromone_levels = np.ones_like(distance_matrix)
+    initial_num_ants = 30
+    alpha = 1.0
+    beta = 4.0
+    evaporation_rate = 0.05
+    iterations = 100
 
-    for _ in range(iterations):
-        for ant in range(num_ants):
-            tour = []
-            visited = set()
-            current_city = np.random.randint(n)
-            tour.append(current_city)
-            visited.add(current_city)
+    def calculate_cost(tour):
+        return sum(distance_matrix[tour[i], tour[(i + 1) % num_nodes]] for i in range(num_nodes))
 
-            while len(visited) < n:  # Visit all cities
-                probabilities = np.zeros(n)
-                for next_city in range(n):
-                    if next_city not in visited:
-                        probabilities[next_city] = (pheromone_matrix[current_city, next_city] ** 1.5) / (distance_matrix[current_city, next_city] + 1e-6)
-                
-                if np.sum(probabilities) > 0:  # Avoid division by zero
-                    probabilities /= np.sum(probabilities)  # Normalize probabilities
-                
-                next_city = np.random.choice(range(n), p=probabilities)
-                tour.append(next_city)
-                visited.add(next_city)
-                current_city = next_city
-            
-            tour.append(tour[0])  # Complete the tour
-            total_distance = sum(distance_matrix[tour[i], tour[i + 1]] for i in range(n))
-            
-            # Enhanced local search improvement using 2-opt
-            for _ in range(local_search_iterations):
-                improved = False
-                for i in range(1, n - 1):
-                    for j in range(i + 1, n):
-                        if j != n - 1 and (distance_matrix[tour[i-1], tour[i]] + distance_matrix[tour[j], tour[(j + 1) % n]] 
-                                           > distance_matrix[tour[i-1], tour[j]] + distance_matrix[tour[i], tour[(j + 1) % n]]):
-                                # Reverse the segment
-                                tour[i:j + 1] = tour[i:j + 1][::-1]  
-                                improved = True
-                if not improved:
-                    break
-            
-            # Update pheromone levels
-            for i in range(n):
-                pheromone_matrix[tour[i], tour[i + 1]] += (1.0 / total_distance) * (1 + (0.1 * np.random.rand()))  
+    best_overall_cost = float('inf')
+    
+    for iteration in range(iterations):
+        num_ants = max(int(initial_num_ants * (1 / (1 + np.exp(0.07 * (best_overall_cost - 300))))), 5)
+        all_tours = []
+        iteration_best_cost = float('inf')
+        iteration_best_tour = None
 
-        # Global pheromone evaporation
-        pheromone_matrix *= decay_factor  # Global decay
+        for _ in range(num_ants):
+            tour = [np.random.choice(num_nodes)]
+            visited = set(tour)
 
-    # Compute heuristics matrix based on pheromone levels
-    for i in range(n):
-        for j in range(n):
+            while len(tour) < num_nodes:
+                current_node = tour[-1]
+                probabilities = np.zeros(num_nodes)
+
+                for next_node in range(num_nodes):
+                    if next_node not in visited:
+                        pheromone_score = pheromone_levels[current_node, next_node]
+                        proximity_score = 1 / (distance_matrix[current_node, next_node] + 1e-10)
+                        probabilities[next_node] = (pheromone_score ** alpha) * (proximity_score ** beta)
+
+                probabilities /= np.sum(probabilities)
+                next_node = np.random.choice(num_nodes, p=probabilities)
+                tour.append(next_node)
+                visited.add(next_node)
+
+            all_tours.append(tour)
+            cost = calculate_cost(tour)
+            if cost < iteration_best_cost:
+                iteration_best_cost = cost
+                iteration_best_tour = tour
+
+        # Local Search (2-opt) for better solutions
+        for i in range(num_nodes):
+            for j in range(i + 1, num_nodes):
+                if j != (i + 1) % num_nodes:
+                    new_tour = iteration_best_tour[:i + 1] + iteration_best_tour[i+1:j + 1][::-1] + iteration_best_tour[j + 1:]
+                    new_cost = calculate_cost(new_tour)
+                    if new_cost < iteration_best_cost:
+                        iteration_best_cost = new_cost
+                        iteration_best_tour = new_tour
+
+        # Pheromone update
+        if iteration_best_tour is not None:
+            cost_gradient = 1 / (iteration_best_cost + 1e-10)
+            for i in range(num_nodes):
+                from_node = iteration_best_tour[i]
+                to_node = iteration_best_tour[(i + 1) % num_nodes]
+                pheromone_levels[from_node, to_node] += cost_gradient * 0.9
+                pheromone_levels[to_node, from_node] += cost_gradient * 0.9 
+
+        # Evaporate pheromones
+        pheromone_levels *= (1 - evaporation_rate)
+
+        # Track overall best cost
+        if iteration_best_cost < best_overall_cost:
+            best_overall_cost = iteration_best_cost
+
+    # Populate heuristics_matrix based on pheromone levels and proximity
+    for i in range(num_nodes):
+        for j in range(num_nodes):
             if i != j:
-                heuristics_matrix[i, j] = pheromone_matrix[i, j] / (distance_matrix[i, j] + 1e-6)
+                heuristics_matrix[i, j] = (pheromone_levels[i, j] ** alpha) * (1 / (distance_matrix[i, j] + 1e-10) ** beta)
 
     return heuristics_matrix
+
 
 
 import torch
