@@ -4,33 +4,32 @@ from sklearn.cluster import KMeans
 import numpy as np
 import numpy as np
 
+import numpy as np
+
 def heuristics(distance_matrix: np.ndarray) -> np.ndarray:
-    num_cities = distance_matrix.shape[0]
+    num_nodes = distance_matrix.shape[0]
+    # Initialize the heuristics matrix with zeros
+    heuristics_matrix = np.zeros_like(distance_matrix)
 
-    # Create a promising matrix based on the inverse of distances
-    inv_distance = 1 / (distance_matrix + np.finfo(float).eps)  # Avoid division by zero
-    promising_matrix = inv_distance * (num_cities - 1)
+    # Calculate the mean distances to all other nodes
+    mean_distances = np.mean(distance_matrix, axis=1)
 
-    # Use local search feedback through a dynamic threshold
-    average_distance = np.mean(distance_matrix, axis=1)
-    adjustments = (average_distance[:, None] + average_distance[None, :]) / 2
+    # Define promising threshold by averaging mean distances
+    promising_threshold = np.mean(mean_distances)
 
-    # Exploring diverse connectivity measures, using a softmax for weighting
-    exp_distances = np.exp(-distance_matrix / (np.max(distance_matrix) + np.finfo(float).eps))
-    connectivity_matrix = exp_distances / np.sum(exp_distances, axis=1, keepdims=True)
+    for i in range(num_nodes):
+        for j in range(num_nodes):
+            if i != j:
+                # Use inverse distance and the difference from the mean to encourage selection of promising edges
+                inv_distance = 1 / distance_matrix[i, j]
+                distance_factor = promising_threshold - distance_matrix[i, j]
+                # Combine both factors, ensuring to only keep positive combination values above different thresholds
+                heuristic_value = inv_distance * (distance_factor > 0) * (1 - (distance_matrix[i, j] / np.max(distance_matrix)))
 
-    # Combine distance and connectivity information
-    promising_matrix *= (1 / (adjustments + np.finfo(float).eps)) * connectivity_matrix
+                heuristics_matrix[i, j] = max(0, heuristic_value)
 
-    # Dynamically adjusting the threshold based on variance
-    feedback_threshold = np.mean(promising_matrix) + np.std(promising_matrix)
-    promising_matrix[promising_matrix < feedback_threshold] = 0
+    return heuristics_matrix
 
-    # Variance normalization to assess edge relevance dynamically
-    variance_adjustment = np.var(promising_matrix) + np.finfo(float).eps
-    promising_matrix /= variance_adjustment
-
-    return promising_matrix
 
 
 import torch
