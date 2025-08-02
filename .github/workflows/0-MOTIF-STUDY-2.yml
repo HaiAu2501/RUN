@@ -1,4 +1,4 @@
-name: 0-MOTIF-STUDY-2
+name: 0-MOTIF-STUDY-SMALL
 
 on:
   workflow_dispatch:
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        size: ["200"]
+        size: ["100"]
 
     steps:
       - name: CHECKOUT RUN REPO
