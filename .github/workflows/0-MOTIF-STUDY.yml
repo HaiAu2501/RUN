@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        size: ["100", "200"]
+        size: ["100"]
 
     steps:
       - name: CHECKOUT RUN REPO
