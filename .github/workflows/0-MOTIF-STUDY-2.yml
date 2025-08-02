@@ -29,7 +29,7 @@ on:
       outer_iterations:
         description: "Outer Iterations"
         required: true
-        default: "20"
+        default: "10"
       inner_iterations:
         description: "Inner Iterations"
         required: true
