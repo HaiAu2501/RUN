@@ -56,7 +56,7 @@ jobs:
     name: MCTS Optimization
     runs-on: ubuntu-latest
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY_3 }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY_2 }}
 
     steps:
       - name: CHECKOUT MOTIF REPO
