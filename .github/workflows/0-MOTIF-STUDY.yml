@@ -9,6 +9,7 @@ on:
         default: "v1"
         type: choice
         options:
+          - baseline
           - v1
           - v2
           - v3
