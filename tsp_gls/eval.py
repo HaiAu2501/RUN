@@ -98,7 +98,7 @@ iter_limit_map = {
 def run(size):
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    path = os.path.join(current_dir, 'dataset', f'test_TSP{size}.npy')
+    path = os.path.join(current_dir, 'datasets', f'test_TSP{size}.npy')
     
     # Process dataset
     results = process_file(path, perturbation_moves=10, iter_limit=10)
