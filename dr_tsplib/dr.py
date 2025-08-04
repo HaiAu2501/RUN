@@ -2,9 +2,9 @@ import numpy as np
 import numba as nb
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple
-from F1 import edge_score
-from F2 import city_badness  
-from F3 import insert_position
+from F1_final_best import edge_score
+from F2_final_best import city_badness  
+from F3_final_best import insert_position
 
 usecache = True
 
