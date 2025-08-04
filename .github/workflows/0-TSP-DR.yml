@@ -85,7 +85,7 @@ jobs:
           retention-days: 90
 
   evaluate:
-    name: Evaluate ${{ github.event.inputs.solver }} - TSPLIB
+    name: Evaluate DR - ${{ matrix.size }}
     needs: optimize
     runs-on: ubuntu-latest
     strategy:
