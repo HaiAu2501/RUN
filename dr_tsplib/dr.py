@@ -255,7 +255,7 @@ def single_dr_run(distances, start_city, destruction_rate=0.3, use_2opt=True):
         
         # 5. Optional 2-opt improvement
         if use_2opt and len(repaired_tour) > 3:
-            two_opt_numba(repaired_tour, distances_float32, max_iterations=10)
+            two_opt_numba(repaired_tour, distances_float32, max_iterations=30)
         
         # Calculate final cost
         final_cost = float(calculate_tour_cost(repaired_tour, distances_float32))
